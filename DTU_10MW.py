@@ -3,6 +3,13 @@ import pandas as pd
 import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 
+dir_data = "data"
+file = "combined_data_new_v2.txt"
+tsr = 8
+R = 80
+B = 3
+
+
 class AirfoilInterpolator:
     def __init__(self,
                  dir_data: str,
@@ -55,49 +62,44 @@ class AirfoilInterpolator:
             else:
                 self.__dict__[to_inter] = interpolate.LinearNDInterpolator(points, values)
 
-
-dir_data = "data"
-file = "combined_data_new_v2.txt"
-tsr = 8
 interp = AirfoilInterpolator(dir_data=dir_data, data_profiles=file, **{"sep":","})
 df_blade_data = pd.read_csv("data/blade_data_new.txt")
 df_blade_data["r/R"] = df_blade_data["radius"]/df_blade_data["radius"].max()
-
-positions, chord, twist = list(), list(), list()
+positions, twist, chord, l2ds = list(), list(), list(), list()
 # line below this assumes airfoil data is listed from the smallest rel_thickness to largest
-df_blades_data =pd.read_csv("data/combined_data_new_v2.txt")
-airfoil_rel_thicknesses = df_blades_data["rel_thickness"].unique()[::-1]
-alphas = df_blades_data[df_blades_data["rel_thickness"] == 241]["alpha"].unique()
-for _, row in df_blade_data.iterrows():
-    positions.append(row["r/R"])
+df_profiles =pd.read_csv("data/combined_data_new_v2.txt")
+airfoil_rel_thicknesses = df_profiles["rel_thickness"].unique()[::-1]
+alphas = df_profiles["alpha"].unique()
+for _, row in df_blade_data[df_blade_data["rel_thickness"]<800].iterrows():
     rel_thickness = row["rel_thickness"]
     interp_args, constraints = None, None
     for inner, outer in zip(airfoil_rel_thicknesses[:-1], airfoil_rel_thicknesses[1:]):
         if rel_thickness == inner or rel_thickness == outer:
-            interp_args, constraints = ["alpha"], {"c_l": {"rel_thickness": [rel_thickness]},
-                                                   "c_d": {"rel_thickness": [rel_thickness]}}
-        elif rel_thickness < inner and rel_thickness > outer:
-            interp_args, constraints = ["alpha", "rel_thickness"], {"c_l": {"rel_thickness": [inner, outer]},
-                                                                    "c_d": {"rel_thickness": [inner, outer]}}
-        if interp_args is not None:
+            c_ls = df_profiles[df_profiles["rel_thickness"]==rel_thickness]["c_l"]
+            lift2drag = c_ls/df_profiles[df_profiles["rel_thickness"]==rel_thickness]["c_d"]
+        if rel_thickness < inner and rel_thickness > outer:
+            interp_args = ["alpha", "rel_thickness"]
+            constraints = {"c_l": {"rel_thickness": [inner, outer]}, "c_d": {"rel_thickness": [inner, outer]}}
             interp.interpolate({"c_l": interp_args, "c_d": interp_args}, constraints=constraints)
             c_ls, lift2drag = list(), list()
             for alpha in alphas:
-                if len(interp_args) == 1:
-                    c_ls.append(interp.c_l(alpha))
-                    lift2drag.append(interp.c_l(alpha)/interp.c_d(alpha))
-                else:
-                    c_ls.append(interp.c_l(alpha, rel_thickness))
-                    lift2drag.append(interp.c_l(alpha, rel_thickness)/interp.c_d(alpha, rel_thickness))
+                c_ls.append(interp.c_l(alpha, rel_thickness))
+                lift2drag.append(interp.c_l(alpha, rel_thickness)/interp.c_d(alpha, rel_thickness))
 
-            c_l = c_ls[np.argmax(lift2drag)]
-            fac = tsr*row["r/R"]*(1+2/(9*(tsr*row["r/R"])**2))
-            chordtoradius = 16*np.pi/(9*tsr*c_l*3)
-            twist.append(np.arctan(2/(3*tsr*row["r/R"]*(1+2/(9*(tsr*row["r/R"])**2))))*180/np.pi)
-            break
+    c_l = c_ls[np.argmax(lift2drag)]
+    alpha = alphas[np.argmax(lift2drag)]
+    positions.append(row["r/R"]*R)
+    l2ds.append(lift2drag[np.argmax(lift2drag)])
+    fac = tsr*row["r/R"]*(1+2/(9*tsr**2*row["r/R"]**2))
+    chord.append(16*np.pi*R/(9*tsr*c_l*B*np.sqrt(4/9+fac**2)))
+    inflow_angle = np.arctan(2/(3*fac))*180/np.pi
+    twist.append(inflow_angle - alpha)
 
-
-plt.plot(positions, twist)
+twist = [section_twist-twist[-1] for section_twist in twist]
+fig, ax = plt.subplots(3,1)
+ax[0].plot(positions, chord)
+ax[1].plot(positions, twist)
+ax[2].plot(positions, l2ds)
+print(np.trapz(positions, l2ds))
 plt.show()
-# interp.interpolate(to_interpolate={"c_l": ["alpha", "rel_thickness"]}, constraints={"c_l": {"rel_thickness": [0,2]}})
 
