@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-data_dir = "data"
+data_dir = "data/NREL_5MW"
 blade_file = "NREL_5MW_blade_data.txt"
-tsr = 8
-R = 80
+tsr = 7.55
+R = 85
 B = 3
 
 
