@@ -69,7 +69,7 @@ class Helper():
 
     @staticmethod
     def handle_axis(axis: matplotlib.pyplot.axis or list[matplotlib.pyplot.axis],
-                    title: str=None,
+                    title: str=None or str or list,
                     grid: bool=False,
                     legend: bool=False,
                     legend_loc: int=0,
@@ -86,7 +86,14 @@ class Helper():
         axis = axis if type(axis) == list else [axis]
         y_label = y_label if type(y_label) == list else [y_label]
         for i, ax in enumerate(axis):
-            ax.set_title(title)
+            if type(title) == str:
+                if i == 0:
+                    ax.set_title(title)
+            else:
+                if len(title) == 1:
+                    ax.set_title(title[0])
+                else:
+                    ax.set_title(title[i])
             if x_lim is not None: ax.set_xlim(x_lim)
             if y_lim is not None: ax.set_ylim(y_lim)
             if font_size:
