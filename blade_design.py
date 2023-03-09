@@ -67,7 +67,8 @@ class BladeApproximation:
         self.column_alpha = column_alpha
 
     def chord_and_twist(self,
-                        skip_rows: int=0) -> None:
+                        skip_rows: int=0,
+                        skip_first_percentage: float=None) -> None:
         self.df_blade["r/R"] = self.df_blade[self.column_positions]/self.df_blade[self.column_positions].max()
         if self.interp is not None:
             df_profiles = self.interp.get_df_profiles()
@@ -76,8 +77,11 @@ class BladeApproximation:
             rel_thicknesses = np.sort(np.asarray(rel_thicknesses))[::-1]
         positions, twist, chord, l2ds = list(), list(), list(), list()
         for i, row in self.df_blade.iterrows():
-            if i < skip_rows:
+            if i < skip_rows and skip_first_percentage is None:
                 continue
+            if skip_first_percentage is not None:
+                if row["r/R"] < skip_first_percentage/100:
+                    continue
 
             if self.interp is None:
                 airfoil_path = row[self.column_airfoil_path]
@@ -117,9 +121,16 @@ class BladeApproximation:
             twist.append(inflow_angle-alpha)
 
         twist = [section_twist-twist[-1] for section_twist in twist]
-        fig, ax = plt.subplots(3, 1)
-        ax[0].plot(positions, chord)
-        ax[1].plot(positions, twist)
-        ax[2].plot(positions, l2ds)
-        print(np.trapz(positions, l2ds))
+        power_indicator = np.trapz(np.asarray(l2ds)*np.asarray(chord), positions)
+        fig, axes = plt.subplots(4, 1)
+        axes[0].plot(positions, chord)
+        axes[1].plot(positions, twist)
+        axes[2].plot(positions, l2ds)
+        axes[3].plot(positions, np.asarray(l2ds)*np.asarray(chord))
+        helper.handle_axis([ax for ax in axes],
+                           title=f"Power indicator: {power_indicator}",
+                           x_label="Radius in m",
+                           y_label=["chord in m", "twist in °", r"$c_l/c_d$", r"load distribution"],
+                           font_size=20,
+                           line_width=5)
         helper.handle_figure(fig, file_figure=self.dir_save+"/"+self.blade_name+".png")
