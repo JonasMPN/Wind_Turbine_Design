@@ -22,7 +22,7 @@ if do["NREL"]:
     NREL.set_blade_columns(column_positions="RNodes",
                            column_airfoil_path="Airfoil")
     NREL.set_airfoil_columns()
-    NREL.chord_and_twist(skip_rows=3)
+    NREL.chord_and_twist(skip_first_percentage=15)
 
 if do["DTU"]:
     DTU = BladeApproximation(root_dir="data",
@@ -37,7 +37,7 @@ if do["DTU"]:
                           column_airfoil_path="airfoil",
                           interpolation_required=True)
     DTU.set_airfoil_columns()
-    DTU.chord_and_twist(skip_rows=2)
+    DTU.chord_and_twist(skip_first_percentage=15)
 
 if do["IEA"]:
     IEA = BladeApproximation(root_dir="data",
@@ -51,4 +51,4 @@ if do["IEA"]:
     IEA.set_blade_columns(column_positions="BlSpn",
                           column_airfoil_path="BlAFID")
     IEA.set_airfoil_columns()
-    IEA.chord_and_twist(skip_rows=1)
+    IEA.chord_and_twist(skip_first_percentage=15)
