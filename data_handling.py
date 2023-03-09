@@ -1,6 +1,9 @@
+import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
 import numpy as np
 import pandas as pd
+from helper_functions import Helper
+helper = Helper()
 
 
 class AirfoilInterpolator:
@@ -59,3 +62,34 @@ class AirfoilInterpolator:
 
     def __getitem__(self, item):
         return self.interpolator[item]
+
+
+def plot_results(file_path: str, plot_dir: str) -> None:
+    df = pd.read_csv(file_path)
+    names = df["name"].unique()
+    fig, axes = plt.subplots(4,1)
+    for name in names:
+        df_tmp = df[df["name"]==name]
+        axes[0].plot(df_tmp["radius"], df_tmp["chord"], label=name)
+        axes[1].plot(df_tmp["radius"], df_tmp["twist"])
+        axes[2].plot(df_tmp["radius"], df_tmp["l2d"])
+        axes[3].plot(df_tmp["radius"], df_tmp["l2d"]*df_tmp["chord"])
+        power_indicator = np.trapz(df_tmp["l2d"]*df_tmp["chord"], df_tmp["radius"])
+    helper.handle_axis([ax for ax in axes],
+                       title=f"NREL 5MW, DTU 10MW, and IEA 10MW in comparison",
+                       x_label="Radius in m",
+                       y_label=["chord in m", "twist in °", r"$c_l/c_d$", r"load distribution"],
+                       legend=True,
+                       font_size=20,
+                       line_width=4)
+    helper.handle_figure(fig, file_figure=plot_dir+"/"+f"{names}"+".png", size=(18.5, 14))
+
+
+def FAST_to_pandas(dir_FAST_data: str,
+                   dir_pandas_save: str):
+    file_blank = "IEA-10.0-198-RWT_AeroDyn15_Polar_"
+    for i in range(30):
+        idx = f"{i}" if i>9 else f"0{i}"
+        file = dir_FAST_data+"/"+file_blank+idx+".dat"
+        df = pd.read_csv(file, names=["alpha", "c_l", "c_d", "c_m"], skiprows=54, delim_whitespace=True)
+        df.to_csv(dir_pandas_save+"/"+file_blank+f"{i}"+".dat", index=False)
