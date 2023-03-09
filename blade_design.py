@@ -18,7 +18,12 @@ class BladeApproximation:
         self.file_blade = self.dir_blade+"/"+blade_filename
         self.dir_save = root_dir+"/"+save_dir
         self.blade_name = blade_name
+        self.file_save = self.dir_save+"/results.dat"
         helper.create_dir(root_dir+"/"+save_dir)
+        try:
+            self.df_results = pd.read_csv(self.file_save)
+        except FileNotFoundError:
+            self.df_results = pd.DataFrame(columns=["name", "radius", "chord", "twist", "l2d", "load"])
 
         self.df_blade = pd.read_csv(self.file_blade)
         self.tsr = None
@@ -68,7 +73,17 @@ class BladeApproximation:
 
     def chord_and_twist(self,
                         skip_rows: int=0,
-                        skip_first_percentage: float=None) -> None:
+                        skip_first_percentage: float=None,
+                        save_to_file: bool=True,
+                        plot: bool=False) -> None:
+        """
+        save_to_file overrides any data that has the same blade name
+        :param skip_rows:
+        :param skip_first_percentage:
+        :param save_to_file:
+        :param plot:
+        :return:
+        """
         self.df_blade["r/R"] = self.df_blade[self.column_positions]/self.df_blade[self.column_positions].max()
         if self.interp is not None:
             df_profiles = self.interp.get_df_profiles()
@@ -122,15 +137,31 @@ class BladeApproximation:
 
         twist = [section_twist-twist[-1] for section_twist in twist]
         power_indicator = np.trapz(np.asarray(l2ds)*np.asarray(chord), positions)
-        fig, axes = plt.subplots(4, 1)
-        axes[0].plot(positions, chord)
-        axes[1].plot(positions, twist)
-        axes[2].plot(positions, l2ds)
-        axes[3].plot(positions, np.asarray(l2ds)*np.asarray(chord))
-        helper.handle_axis([ax for ax in axes],
-                           title=f"Power indicator: {power_indicator}",
-                           x_label="Radius in m",
-                           y_label=["chord in m", "twist in °", r"$c_l/c_d$", r"load distribution"],
-                           font_size=20,
-                           line_width=5)
-        helper.handle_figure(fig, file_figure=self.dir_save+"/"+self.blade_name+".png")
+        if plot:
+            fig, axes = plt.subplots(4, 1)
+            axes[0].plot(positions, chord)
+            axes[1].plot(positions, twist)
+            axes[2].plot(positions, l2ds)
+            axes[3].plot(positions, np.asarray(l2ds)*np.asarray(chord))
+            helper.handle_axis([ax for ax in axes],
+                               title=f"Power indicator: {power_indicator}",
+                               x_label="Radius in m",
+                               y_label=["chord in m", "twist in °", r"$c_l/c_d$", r"load distribution"],
+                               font_size=20,
+                               line_width=5)
+            helper.handle_figure(fig, file_figure=self.dir_save+"/"+self.blade_name+".png")
+        if save_to_file:
+            if self.blade_name in self.df_results["name"].unique():
+                self.df_results = self.df_results[self.df_results["name"] != self.blade_name]
+            self.df_results = pd.concat([self.df_results,
+                                         pd.DataFrame({"name": self.blade_name,
+                                                       "radius": positions,
+                                                       "chord": chord,
+                                                       "twist": twist,
+                                                       "l2d": l2ds,
+                                                       "load": np.asarray(l2ds)*np.asarray(chord)})])
+            self.df_results.to_csv(self.file_save, index=False)
+        else:
+            print("The results are not exported to any file. Set 'save_to_file' or 'plot' to true.")
+
+
