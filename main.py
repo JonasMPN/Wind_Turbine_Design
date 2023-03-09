@@ -1,3 +1,4 @@
+import data_handling
 from blade_design import BladeApproximation
 
 rotor_radius = 85
@@ -5,10 +6,16 @@ number_of_blades = 3
 tip_speed_ratio = 7.55
 
 do = {
-    "NREL": True,
-    "DTU": True,
-    "IEA": True
+    "convert_FAST_data": False,
+    "NREL": False,
+    "DTU": False,
+    "IEA": False,
+    "plot_results_file": True
 }
+
+if do["convert_FAST_data"]:
+    data_handling.FAST_to_pandas(dir_FAST_data="data/IEA_10MW/airfoils/FAST",
+                                 dir_pandas_save="data/IEA_10MW/airfoils/pandas")
 
 if do["NREL"]:
     NREL = BladeApproximation(root_dir="data",
@@ -52,3 +59,7 @@ if do["IEA"]:
                           column_airfoil_path="BlAFID")
     IEA.set_airfoil_columns()
     IEA.chord_and_twist(skip_first_percentage=15)
+
+if do["plot_results_file"]:
+    data_handling.plot_results(file_path="data/results/results.dat",
+                               plot_dir="data/results")
