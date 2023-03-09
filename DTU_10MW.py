@@ -23,6 +23,8 @@ class AirfoilInterpolator:
             self.df = pd.concat([self.df, pd.read_csv(dir_data+"/"+file, **pandas_read_csv)],
                                          ignore_index=True)
 
+    def get_df_profiles(self): return self.df
+
     def interpolate(self,
                     to_interpolate: dict,
                     constraints: dict = None) -> None:
