@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
 import numpy as np
 import pandas as pd
-from helper_functions import Helper
+from src.helper_functions import Helper
 helper = Helper()
 
 
@@ -103,11 +103,16 @@ def airfoil_scalars_from_FAST(dir_FAST_data: str,
         "CritCn1": 36,
         "CritCn2": 37,
     }
-    data = {col: list() for col in ["filename", *lines_to_use]}
+    data = {col: list() for col in ["airfoil_name", "polar_file_name", "coord_file_name", *lines_to_use]}
     for i in range(30):
         idx = f"{i}" if i>9 else f"0{i}"
-        file = dir_FAST_data+f"/IEA-10.0-198-RWT_AeroDyn15_Polar_{idx}.dat"
-        data["filename"].append(file)
+        airfoil = f"IEA-10.0-198-RWT_AeroDyn15_Polar_{i}"
+        polar_file_name = f"IEA-10.0-198-RWT_AeroDyn15_Polar_{idx}.dat"
+        coord_file_name = f"IEA-10.0-198-RWT_AF{idx}_Coords.txt"
+        data["airfoil_name"].append(airfoil)
+        data["polar_file_name"].append(polar_file_name)
+        data["coord_file_name"].append(coord_file_name)
+        file = dir_FAST_data+"/"+polar_file_name
         with open(file, "r") as f:
             lines = f.readlines()
             for column, line_number in lines_to_use.items():
