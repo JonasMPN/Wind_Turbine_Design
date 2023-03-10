@@ -86,10 +86,36 @@ def plot_results(file_path: str, plot_dir: str) -> None:
 
 
 def FAST_to_pandas(dir_FAST_data: str,
-                   dir_pandas_save: str):
+                   dir_save: str):
     file_blank = "IEA-10.0-198-RWT_AeroDyn15_Polar_"
     for i in range(30):
         idx = f"{i}" if i>9 else f"0{i}"
         file = dir_FAST_data+"/"+file_blank+idx+".dat"
         df = pd.read_csv(file, names=["alpha", "c_l", "c_d", "c_m"], skiprows=54, delim_whitespace=True)
-        df.to_csv(dir_pandas_save+"/"+file_blank+f"{i}"+".dat", index=False)
+        df.to_csv(dir_save+"/"+file_blank+f"{i}"+".dat", index=False)
+
+def airfoil_scalars_from_FAST(dir_FAST_data: str,
+                              dir_save: str):
+    lines_to_use = {
+        "StallAngle1": 18,
+        "StallAngle2": 19,
+        "CnSlope": 21,
+        "CritCn1": 36,
+        "CritCn2": 37,
+    }
+    data = {col: list() for col in ["filename", *lines_to_use]}
+    for i in range(30):
+        idx = f"{i}" if i>9 else f"0{i}"
+        file = dir_FAST_data+f"/IEA-10.0-198-RWT_AeroDyn15_Polar_{idx}.dat"
+        data["filename"].append(file)
+        with open(file, "r") as f:
+            lines = f.readlines()
+            for column, line_number in lines_to_use.items():
+                value = str()
+                for char in lines[line_number]:
+                    if char != " ":
+                        value += char
+                    else:
+                        break
+                data[column].append(float(value))
+    pd.DataFrame(data).to_csv(dir_save+"/airfoil_additional_information.dat", index=False)
