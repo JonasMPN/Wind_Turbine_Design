@@ -3,7 +3,7 @@ import pandas as pd
 import scipy.interpolate as interpolate
 import matplotlib.pyplot as plt
 
-dir_data = "data/DTU_10MW"
+dir_data = "../data/DTU_10MW"
 file = "combined_data_new_v2.txt"
 tsr = 7.55
 R = 85
@@ -65,7 +65,7 @@ class AirfoilInterpolator:
                 self.__dict__[to_inter] = interpolate.LinearNDInterpolator(points, values)
 
 interp = AirfoilInterpolator(dir_data=dir_data, data_profiles=file, **{"sep":","})
-df_blade_data = pd.read_csv("data/DTU_10MW/blade_data_new.txt")
+df_blade_data = pd.read_csv("../data/DTU_10MW/blade_data_new.txt")
 df_blade_data["r/R"] = df_blade_data["radius"]/df_blade_data["radius"].max()
 positions, twist, chord, l2ds = list(), list(), list(), list()
 # line below this assumes airfoil data is listed from the smallest rel_thickness to largest

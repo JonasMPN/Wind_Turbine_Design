@@ -90,7 +90,8 @@ class BladeApproximation:
             alphas = df_profiles[self.column_alpha].unique()
             rel_thicknesses = df_profiles[self.column_rel_thickness].unique()
             rel_thicknesses = np.sort(np.asarray(rel_thicknesses))[::-1]
-        positions, twist, chord, l2ds = list(), list(), list(), list()
+        positions, twist, chord, l2ds, all_c_l, all_c_d = list(), list(), list(), list(), list(), list()
+        inflow_angles = list()
         for i, row in self.df_blade.iterrows():
             if i < skip_rows and skip_first_percentage is None:
                 continue
@@ -104,6 +105,7 @@ class BladeApproximation:
                 df_airfoil = pd.read_csv(self.dir_blade+"/"+airfoil_path)
                 lift2drag = df_airfoil[self.column_cl]/df_airfoil[self.column_cd]
                 c_l = df_airfoil[self.column_cl].iloc[np.argmax(lift2drag)]
+                c_d = df_airfoil[self.column_cd].iloc[np.argmax(lift2drag)]
                 alpha = df_airfoil[self.column_alpha].iloc[np.argmax(lift2drag)]
             else:
                 rel_thickness = row[self.column_rel_thickness]
@@ -118,14 +120,16 @@ class BladeApproximation:
                                        self.column_cd: {self.column_rel_thickness: [inner, outer]}}
                         self.interp.prepare_interpolation({self.column_cl: interp_args,
                                                            self.column_cd: interp_args}, constraints=constraints)
-                        c_ls, lift2drag = list(), list()
+                        c_ls, c_ds, lift2drag = list(), list(), list()
                         for alpha in alphas:
                             c_l = self.interp[self.column_cl](alpha, rel_thickness)
                             c_d = self.interp[self.column_cd](alpha, rel_thickness)
                             c_ls.append(c_l)
+                            c_ds.append(c_d)
                             lift2drag.append(c_l/c_d)
                         break
                 c_l = c_ls[np.argmax(lift2drag)]
+                c_d = c_ds[np.argmax(lift2drag)]
                 alpha = alphas[np.argmax(lift2drag)]
 
             positions.append(row["r/R"]*self.R)
@@ -133,7 +137,10 @@ class BladeApproximation:
             fac = self.tsr*row["r/R"]*(1+2/(9*self.tsr**2*row["r/R"]**2))
             chord.append(16*np.pi*self.R/(9*self.tsr*c_l*self.B*np.sqrt(4/9+fac**2)))
             inflow_angle = np.arctan(2/(3*fac))*180/np.pi
+            inflow_angles.append(inflow_angle)
             twist.append(inflow_angle-alpha)
+            all_c_l.append(c_l)
+            all_c_d.append(c_d)
 
         twist = [section_twist-twist[-1] for section_twist in twist]
         power_indicator = np.trapz(np.asarray(l2ds)*np.asarray(chord), positions)
@@ -153,13 +160,14 @@ class BladeApproximation:
         if save_to_file:
             if self.blade_name in self.df_results["name"].unique():
                 self.df_results = self.df_results[self.df_results["name"] != self.blade_name]
+            load = np.sin(inflow_angles)*np.asarray(all_c_l)-np.cos(inflow_angles)*np.asarray(all_c_d)
             self.df_results = pd.concat([self.df_results,
                                          pd.DataFrame({"name": self.blade_name,
                                                        "radius": positions,
                                                        "chord": chord,
                                                        "twist": twist,
                                                        "l2d": l2ds,
-                                                       "load": np.asarray(l2ds)*np.asarray(chord)})])
+                                                       "load": load})])
             self.df_results.to_csv(self.file_save, index=False)
         else:
             print("The results are not exported to any file. Set 'save_to_file' or 'plot' to true.")

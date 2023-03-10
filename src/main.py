@@ -1,5 +1,5 @@
-import data_handling
-from blade_design import BladeApproximation
+from src import data_handling
+from src.blade_design import BladeApproximation
 
 rotor_radius = 85
 number_of_blades = 3
@@ -7,18 +7,18 @@ tip_speed_ratio = 7.55
 
 do = {
     "convert_FAST_data": False,
-    "NREL": False,
-    "DTU": False,
-    "IEA": False,
+    "NREL": True,
+    "DTU": True,
+    "IEA": True,
     "plot_results_file": True
 }
 
 if do["convert_FAST_data"]:
-    data_handling.FAST_to_pandas(dir_FAST_data="data/IEA_10MW/airfoils/FAST",
-                                 dir_pandas_save="data/IEA_10MW/airfoils/pandas")
+    data_handling.FAST_to_pandas(dir_FAST_data="../data/IEA_10MW/airfoils/FAST",
+                                 dir_pandas_save="../data/IEA_10MW/airfoils/pandas")
 
 if do["NREL"]:
-    NREL = BladeApproximation(root_dir="data",
+    NREL = BladeApproximation(root_dir="../data",
                               blade_dir="NREL_5MW",
                               blade_filename="NREL_5MW_blade_data.txt",
                               save_dir="results",
@@ -32,11 +32,11 @@ if do["NREL"]:
     NREL.chord_and_twist(skip_first_percentage=15)
 
 if do["DTU"]:
-    DTU = BladeApproximation(root_dir="data",
-                              blade_dir="DTU_10MW",
-                              blade_filename="blade_data_new.txt",
-                              save_dir="results",
-                              blade_name="DTU_10MW")
+    DTU = BladeApproximation(root_dir="../data",
+                             blade_dir="DTU_10MW",
+                             blade_filename="blade_data_new.txt",
+                             save_dir="results",
+                             blade_name="DTU_10MW")
     DTU.set_rotor(tip_speed_ratio= tip_speed_ratio,
                   rotor_radius=rotor_radius,
                   number_of_blades=number_of_blades)
@@ -47,7 +47,7 @@ if do["DTU"]:
     DTU.chord_and_twist(skip_first_percentage=15)
 
 if do["IEA"]:
-    IEA = BladeApproximation(root_dir="data",
+    IEA = BladeApproximation(root_dir="../data",
                              blade_dir="IEA_10MW",
                              blade_filename="blade_data.txt",
                              save_dir="results",
@@ -61,5 +61,5 @@ if do["IEA"]:
     IEA.chord_and_twist(skip_first_percentage=15)
 
 if do["plot_results_file"]:
-    data_handling.plot_results(file_path="data/results/results.dat",
-                               plot_dir="data/results")
+    data_handling.plot_results(file_path="../data/results/results.dat",
+                               plot_dir="../data/results")

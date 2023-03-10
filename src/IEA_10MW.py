@@ -13,7 +13,7 @@ if FAST_to_pandas:
         df.to_csv("data/IEA_10MW/airfoils/pandas_format/"+file_blank+f"{i}"+".dat", index=None)
 
 
-data_dir = "data/IEA_10MW"
+data_dir = "../data/IEA_10MW"
 blade_file = "blade_data.txt"
 file_blank = "IEA-10.0-198-RWT_AeroDyn15_Polar_"
 tsr = 7.55
