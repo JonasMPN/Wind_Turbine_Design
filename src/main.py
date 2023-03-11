@@ -6,16 +6,26 @@ number_of_blades = 3
 tip_speed_ratio = 7.55
 
 do = {
-    "convert_FAST_data": False,
-    "NREL": True,
-    "DTU": True,
-    "IEA": True,
-    "plot_results_file": True
+    "FAST_to_pandas": False,
+    "openFAST_to_FAST": True,
+    "NREL": False,
+    "DTU": False,
+    "IEA": False,
+    "plot_results_file": False
 }
 
-if do["convert_FAST_data"]:
+if do["FAST_to_pandas"]:
     data_handling.FAST_to_pandas(dir_FAST_data="../data/IEA_10MW/airfoils/FAST",
-                                 dir_pandas_save="../data/IEA_10MW/airfoils/pandas")
+                                 dir_save="../data/IEA_10MW/airfoils/pandas")
+
+if do["openFAST_to_FAST"]:
+    data_handling.prepare_openFAST_to_FAST(dir_openFAST_data="../data/IEA_10MW",
+                                           dir_coordinates="airfoils/coordinates",
+                                           dir_polars="airfoils/openFAST",
+                                           file_airfoil_names="airfoils/airfoil_names.dat",
+                                           file_aero="blade_data.txt",
+                                           file_structure="IEA-10.0-198-RWT_ElastoDyn_blade.txt",
+                                           dir_FAST="../data/FAST_integration")
 
 if do["NREL"]:
     NREL = BladeApproximation(root_dir="../data",
