@@ -19,12 +19,9 @@ if do["FAST_to_pandas"]:
                                  dir_save="../data/IEA_10MW/airfoils/pandas")
 
 if do["openFAST_to_FAST"]:
-    data_handling.prepare_openFAST_to_FAST(dir_openFAST_data="../data/IEA_10MW",
-                                           dir_coordinates="airfoils/coordinates",
-                                           dir_polars="airfoils/openFAST",
-                                           file_airfoil_names="airfoils/airfoil_names.dat",
-                                           file_aero="blade_data.txt",
-                                           file_structure="IEA-10.0-198-RWT_ElastoDyn_blade.txt",
+    data_handling.prepare_openFAST_to_FAST(dir_openFAST_data="../data/openFAST",
+                                           aero_dyn_blade_file="IEA-10.0-198-RWT_AeroDyn15_blade.dat",
+                                           elasto_dyn_blade_file= "IEA-10.0-198-RWT_ElastoDyn_blade.dat",
                                            dir_FAST="../data/FAST_integration")
 
 if do["NREL"]:
