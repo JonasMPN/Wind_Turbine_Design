@@ -7,23 +7,27 @@ file_additional_information = append(data_root, "/airfoil_additional_information
 scalar_info = readtable(file_additional_information);
 dir_polars = append(data_root, "/polars");
 dir_coordinates = append(data_root, "/coordinates");
-n_airfoils = size(scalar_info.airfoil_name);
+n_airfoils = size(scalar_info.polar_file_name);
 
 
 %% change Name
-base.Airfoil.Name = scalar_info.airfoil_name;
+names = string(n_airfoils);
+for i = 1:n_airfoils
+    names(i) = string(i);
+end
+base.Airfoil.Name = cellstr(names).';
 
 %% change Geometry
 base.Airfoil.Geometry = cell(flip(n_airfoils));
-for i = 1:length(scalar_info.airfoil_name)
+for i = 1:n_airfoils
     file_name = scalar_info.coord_file_name{i};
-    coords = readtable(append(dir_coordinates,"/",file_name), 'NumHeaderLines',8);
+    coords = readtable(append(dir_coordinates,"/",file_name), 'NumHeaderLines', 8);
     base.Airfoil.Geometry{i} = table2array(coords).';
 end
 
 %% change Alpha
 base.Airfoil.Alpha = cell(flip(n_airfoils));
-for i = 1:length(scalar_info.airfoil_name)
+for i = 1:n_airfoils
     file_name = scalar_info.polar_file_name{i};
     data = readtable(append(dir_polars,"/",file_name));
     base.Airfoil.Alpha{i} = data.alpha;
@@ -31,7 +35,7 @@ end
 
 %% change Cl
 base.Airfoil.Cl = cell(flip(n_airfoils));
-for i = 1:length(scalar_info.airfoil_name)
+for i = 1:n_airfoils
     file_name = scalar_info.polar_file_name{i};
     data = readtable(append(dir_polars,"/",file_name));
     base.Airfoil.Cl{i} = data.c_l;
@@ -39,7 +43,7 @@ end
 
 %% change Cd
 base.Airfoil.Cd = cell(flip(n_airfoils));
-for i = 1:length(scalar_info.airfoil_name)
+for i = 1:n_airfoils
     file_name = scalar_info.polar_file_name{i};
     data = readtable(append(dir_polars,"/",file_name));
     base.Airfoil.Cd{i} = data.c_d;
@@ -47,7 +51,7 @@ end
 
 %% change Cm
 base.Airfoil.Cm = cell(flip(n_airfoils));
-for i = 1:length(scalar_info.airfoil_name)
+for i = 1:n_airfoils
     file_name = scalar_info.polar_file_name{i};
     data = readtable(append(dir_polars,"/",file_name));
     base.Airfoil.Cm{i} = data.c_m;
