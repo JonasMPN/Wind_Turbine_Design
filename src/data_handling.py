@@ -152,4 +152,15 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
     pd.DataFrame(data).to_csv(dir_FAST+f"/airfoil_additional_information.{file_type}", index=False)
 
     shutil.copyfile(dir_openFAST_data+f"/{file_aero}",dir_FAST+f"/blade_aero.{file_type}")
-    shutil.copyfile(dir_openFAST_data+f"/{file_structure}",dir_FAST+f"/blade_structure.{file_type}")
+    use_lines = {"skiprows": None, "nrows": None}
+    with open(dir_openFAST_data+f"/{file_structure}", "r") as f:
+        lines = f.readlines()
+        for row_number, line in enumerate(lines):
+            if "DISTRIBUTED BLADE PROPERTIES" in line:
+                use_lines["skiprows"] = row_number+3
+            if use_lines["skiprows"] is not None:
+                if "----" in line:
+                    use_lines["nrows"] = row_number-use_lines["skiprows"]
+    df_structure = pd.read_csv(dir_openFAST_data+f"/{file_structure}", delim_whitespace=True,
+                               names=["BlFract","PitchAxis","StrcTwst", "BMassDen", "FlpStff", "EdgStff"], **use_lines)
+    df_structure.to_csv(dir_FAST+f"/blade_structure.{file_type}", index=False)
