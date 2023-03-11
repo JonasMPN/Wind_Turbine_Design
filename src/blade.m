@@ -1,9 +1,11 @@
 clear
+radius = 85;
+openFAST_data_file_type = "dat";
 data_root = "../data/FAST_integration";
 file_to_change = append(data_root, "/IEA_10MW.mat");
 base = load(file_to_change);
-aero_data = readtable(append(data_root, "/blade_aero.txt"));
-structure_data = readtable(append(data_root, "/blade_structure.txt"));
+aero_data = readtable(append(data_root, "/blade_aero.",openFAST_data_file_type));
+structure_data = readtable(append(data_root, "/blade_structure.",openFAST_data_file_type));
 n_positions = size(aero_data.BlSpn);
 
 %% change Radius

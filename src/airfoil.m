@@ -1,8 +1,9 @@
 clear
+openFAST_data_file_type = "dat";
 data_root = "../data/FAST_integration";
 file_to_change = append(data_root, "/IEA_10MW.mat");
 base = load(file_to_change);
-file_additional_information = append(data_root, "/airfoil_additional_information.dat");
+file_additional_information = append(data_root, "/airfoil_additional_information.",openFAST_data_file_type);
 scalar_info = readtable(file_additional_information);
 dir_polars = append(data_root, "/polars");
 dir_coordinates = append(data_root, "/coordinates");
