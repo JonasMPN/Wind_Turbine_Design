@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
 import numpy as np
 import pandas as pd
+import os, shutil
 from src.helper_functions import Helper
 helper = Helper()
 
@@ -94,26 +95,48 @@ def FAST_to_pandas(dir_FAST_data: str,
         df = pd.read_csv(file, names=["alpha", "c_l", "c_d", "c_m"], skiprows=54, delim_whitespace=True)
         df.to_csv(dir_save+"/"+file_blank+f"{i}"+".dat", index=False)
 
-def airfoil_scalars_from_FAST(dir_FAST_data: str,
-                              dir_save: str):
+
+def prepare_openFAST_to_FAST(dir_openFAST_data: str,
+                             dir_coordinates: str,
+                             dir_polars: str,
+                             file_airfoil_names: str,
+                             file_aero: str,
+                             file_structure: str,
+                             dir_FAST: str,
+                             file_type: str="dat") -> None:
+    """
+    THIS FUNCTION OVERWRITES THE DIRECTORY "dir_FAST"!!!
+    This function copies the coordinates and polars directory while changing the filetype of the directories' files
+    to "file_type".
+    It also writes out the stall angles, c_n slope, and critical c_n and saves it to a file called
+    "airfoil_additional_information" (file_type = dat)
+    :param dir_openFAST_data:
+    :param dir_coordinates:
+    :param dir_polars:
+    :param dir_FAST:
+    :return:
+    """
+    dir_coordinates = dir_openFAST_data+"/"+dir_coordinates
+    dir_polars = dir_openFAST_data+"/"+dir_polars
+    helper.create_dir(dir_FAST)
+    helper.create_dir(dir_FAST+"/coordinates", overwrite=True)
+    for file in os.listdir(dir_coordinates):
+        new_file = file[::-1][file[::-1].find("."):][::-1]+file_type
+        shutil.copyfile(dir_coordinates+"/"+file, dir_FAST+"/coordinates/"+new_file)
+
+    helper.create_dir(dir_FAST+"/polars", overwrite=True)
     lines_to_use = {
         "StallAngle1": 18,
         "StallAngle2": 19,
         "CnSlope": 21,
         "CritCn1": 36,
-        "CritCn2": 37,
-    }
+        "CritCn2": 37}
     data = {col: list() for col in ["airfoil_name", "polar_file_name", "coord_file_name", *lines_to_use]}
-    for i in range(30):
-        idx = f"{i}" if i>9 else f"0{i}"
-        airfoil = f"IEA-10.0-198-RWT_AeroDyn15_Polar_{i}"
-        polar_file_name = f"IEA-10.0-198-RWT_AeroDyn15_Polar_{idx}.dat"
-        coord_file_name = f"IEA-10.0-198-RWT_AF{idx}_Coords.txt"
-        data["airfoil_name"].append(airfoil)
-        data["polar_file_name"].append(polar_file_name)
-        data["coord_file_name"].append(coord_file_name)
-        file = dir_FAST_data+"/"+polar_file_name
-        with open(file, "r") as f:
+    for file in os.listdir(dir_polars):
+        new_file = file[::-1][file[::-1].find("."):][::-1]+file_type
+        df = pd.read_csv(dir_polars+"/"+file, names=["alpha", "c_l", "c_d", "c_m"], skiprows=54, delim_whitespace=True)
+        df.to_csv(dir_FAST+"/polars/"+new_file, index=False)
+        with open(dir_polars+"/"+file, "r") as f:
             lines = f.readlines()
             for column, line_number in lines_to_use.items():
                 value = str()
@@ -123,4 +146,10 @@ def airfoil_scalars_from_FAST(dir_FAST_data: str,
                     else:
                         break
                 data[column].append(float(value))
-    pd.DataFrame(data).to_csv(dir_save+"/airfoil_additional_information.dat", index=False)
+    data["airfoil_name"] = pd.read_csv(dir_openFAST_data+"/"+file_airfoil_names)["name"]
+    data["polar_file_name"] = os.listdir(dir_FAST+"/polars")
+    data["coord_file_name"] = os.listdir(dir_FAST+"/coordinates")
+    pd.DataFrame(data).to_csv(dir_FAST+f"/airfoil_additional_information.{file_type}", index=False)
+
+    shutil.copyfile(dir_openFAST_data+f"/{file_aero}",dir_FAST+f"/blade_aero.{file_type}")
+    shutil.copyfile(dir_openFAST_data+f"/{file_structure}",dir_FAST+f"/blade_structure.{file_type}")
