@@ -77,6 +77,7 @@ class Helper():
                     legend: bool=False,
                     legend_loc: int=0,
                     legend_columns: int=1,
+                    legend_together: int=False,
                     x_label: str or list[str]=None,
                     y_label: str or list[str]=None,
                     z_label: str=None,
@@ -148,20 +149,30 @@ class Helper():
             ax.set_xscale(x_scale)
             ax.set_yscale(y_scale)
 
-        if legend or line_width:
-            lines, labels = list(), list()
-            for ax in axis:
-                lines += ax.get_lines()
-            if line_width:
-                for line in lines:
-                    line.set_linewidth(line_width)
-            labels = [line.get_label() for line in lines if line.get_label()[0] != "_"]
-            lines = [line for line in lines if line.get_label()[0] != "_"]
-            if legend:
-                if font_size:
-                    axis[0].legend(lines, labels, ncol=legend_columns, prop={"size": font_size}, loc=legend_loc)
-                else:
-                    axis[0].legend(lines, labels, ncol=legend_columns, loc=legend_loc)
+            if legend or line_width:
+                if (type(legend_together) == int or line_width) and i==0:
+                    lines = list()
+                    for axs in axis:
+                        lines += axs.get_lines()
+                    if line_width:
+                        for line in lines:
+                            line.set_linewidth(line_width)
+                    labels = [line.get_label() for line in lines if line.get_label()[0] != "_"]
+                    if type(legend_together) == int:
+                        if font_size:
+                            axis[legend_together].legend(lines, labels, ncol=legend_columns, prop={"size": font_size},
+                                                         loc=legend_loc)
+                        else:
+                            axis[legend_together].legend(lines, labels, ncol=legend_columns, loc=legend_loc)
+                if not legend_together:
+                    lines = ax.get_lines()
+                    lines = [line for line in lines if line.get_label()[0] != "_"]
+                    labels = [line.get_label() for line in lines if line.get_label()[0] != "_"]
+                    if legend:
+                        if font_size:
+                            ax.legend(lines, labels, ncol=legend_columns, prop={"size": font_size}, loc=legend_loc)
+                        else:
+                            ax.legend(lines, labels, ncol=legend_columns, loc=legend_loc)
         return axis if shape is None else np.asarray(axis).reshape(shape)
 
     @staticmethod
