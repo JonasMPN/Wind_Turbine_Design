@@ -82,12 +82,12 @@ if do["plot_results_file"]:
 if do["BEM"]:
     bem = BEM("../data/results")
     bem.set_constants(rotor_radius=99, root_radius=0, n_blades=3, air_density=1.225)
-    bem.solve_TUD("../data/IEA_10MW/blade_data_v2.txt", wind_speed=8, tip_speed_ratio=10.58, pitch=0, start_radius=10)
+    bem.solve_TUD("../data/IEA_10MW/blade_data_S.txt", wind_speed=8, tip_speed_ratio=10.58, pitch=0, start_radius=10)
 
 if do["plot_BEM_results"]:
     df = pd.read_csv("../data/results/BEM_results.dat")
     df_original = pd.read_csv("../data/IEA_10MW/blade_data.txt")
-    df_new = pd.read_csv("../data/IEA_10MW/blade_data_v2.txt")
+    df_new = pd.read_csv("../data/IEA_10MW/blade_data_S.txt")
     fig, ax = plt.subplots(3,1)
     # all about angles
     # ax[0].plot(df["r_centre"], df["alpha"], label="alpha")
