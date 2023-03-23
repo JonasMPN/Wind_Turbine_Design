@@ -13,13 +13,13 @@ tip_speed_ratio = 10.58
 
 do = {
     "FAST_to_pandas": False,
-    "openFAST_to_FAST": False,
+    "openFAST_to_FAST": True,
     "NREL": False,
     "DTU": False,
     "IEA": False,
     "plot_results_file": False,
     "BEM": False,
-    "plot_BEM_results": True,
+    "plot_BEM_results": False,
 }
 
 if do["FAST_to_pandas"]:
@@ -30,7 +30,8 @@ if do["openFAST_to_FAST"]:
     data_handling.prepare_openFAST_to_FAST(dir_openFAST_data="../data/openFAST",
                                            aero_dyn_blade_file="IEA-10.0-198-RWT_AeroDyn15_blade.dat",
                                            elasto_dyn_blade_file= "IEA-10.0-198-RWT_ElastoDyn_blade.dat",
-                                           dir_FAST="../data/FAST_integration")
+                                           dir_FAST="../data/FAST_integration",
+                                           incorporate_external={"new_blade_data.txt": ["BlTwist"]})
 
 if do["NREL"]:
     NREL = BladeApproximation(root_dir="../data",

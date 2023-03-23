@@ -23,8 +23,8 @@ class AirfoilInterpolator:
         return self.df
 
     def prepare_interpolation(self,
-                             to_interpolate: dict,
-                             constraints: dict = None) -> None:
+                              to_interpolate: dict,
+                              constraints: dict = None) -> None:
         """
         Multidimensional interpolation. The data is taken from the files that are specified during the initialisation of
         the class' instance. The parameter 'to_interpolate' states which parameter(s) is(are) to be interpolated and on
@@ -100,6 +100,7 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
                              aero_dyn_blade_file: str,
                              elasto_dyn_blade_file: str,
                              dir_FAST: str,
+                             incorporate_external: dict=None,
                              file_type: str="dat") -> None:
     """
     THIS FUNCTION OVERWRITES THE DIRECTORY "dir_FAST"!!!
@@ -115,7 +116,7 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
     """
     helper.create_dir(dir_FAST)
     helper.create_dir(dir_FAST+"/coordinates", overwrite=True)
-    helper.create_dir(dir_FAST + "/polars", overwrite=True)
+    helper.create_dir(dir_FAST+"/polars", overwrite=True)
     lines_to_use = {
         "StallAngle1": 18,
         "StallAngle2": 19,
@@ -148,6 +149,15 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
 
     df_blade_aero = pd.read_csv(dir_openFAST_data+"/"+aero_dyn_blade_file, skiprows=6, delim_whitespace=True,
                                 names=["BlSpn", "BlCrvAC", "BlSwpAC", "BlCrvAng", "BlTwist", "BlChord", "BlAFID"])
+    if incorporate_external is not None:
+        for file, parameters in incorporate_external.items():
+            df_tmp = pd.read_csv(dir_openFAST_data+"/"+file)
+            for param in parameters:
+                try:
+                    df_blade_aero[param] = df_tmp[param]
+                    print(f"Parameter {param} was taken from {file} to overwrite prior openFAST data.")
+                except KeyError:
+                    pass
     df_blade_aero.to_csv(dir_FAST+f"/blade_aero_dyn.{file_type}", index=False)
 
     use_lines = {"skiprows": None, "nrows": None}
