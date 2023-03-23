@@ -79,7 +79,7 @@ def plot_results(file_path: str, plot_dir: str) -> None:
     helper.handle_axis([ax for ax in axes],
                        title=f"NREL 5MW, DTU 10MW, and IEA 10MW in comparison",
                        x_label="Radius in m",
-                       y_label=["chord in m", "twist in °", r"$c_l/c_d$", r"load distribution"],
+                       y_label=["chord in m", "twist in °", r"$(c_l/c_d)_{max}$", r"'load distribution'"],
                        legend=True,
                        font_size=20,
                        line_width=4)
