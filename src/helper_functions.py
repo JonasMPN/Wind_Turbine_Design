@@ -1,8 +1,8 @@
 import pathlib
 import os
 import shutil
-import matplotlib
-
+import matplotlib.pyplot
+import numpy as np
 
 class Helper():
     def __init__(self):
@@ -51,52 +51,86 @@ class Helper():
         return msg, keep_going
 
     @staticmethod
-    def handle_figure(figure: matplotlib.figure,
-                      file_figure: str=False,
+    def handle_figure(figure: matplotlib.pyplot.figure,
+                      save_to: str=False,
                       show: bool=False,
                       size: tuple=(18.5, 10),
                       inches: int=100,
                       tight_layout: bool=True,
-                      close: bool=True) -> matplotlib.figure:
+                      close: bool=True) -> matplotlib.pyplot.figure:
         figure.set_size_inches(size)
         figure.set_dpi(inches)
         figure.set_tight_layout(tight_layout)
-        if file_figure:
-            figure.savefig(file_figure)
+        if save_to:
+            figure.savefig(save_to)
         if show:
-            figure.show()
-        if close: matplotlib.pyplot.close(figure)
-        else: return figure
+            matplotlib.pyplot.show()
+        if close and not show:
+            matplotlib.pyplot.close(figure)
+        else:
+            return figure
 
-    @staticmethod
-    def handle_axis(axis: matplotlib.pyplot.axis or list[matplotlib.pyplot.axis],
-                    title: str=None or str or list,
-                    grid: bool=False,
+    def handle_axis(self,
+                    axis: matplotlib.pyplot.axis or np.ndarray[matplotlib.pyplot.axis],
+                    title: str or list[str]=None,
+                    grid: bool or list[bool]=False,
                     legend: bool=False,
                     legend_loc: int=0,
                     legend_columns: int=1,
-                    x_label: str=False,
-                    y_label: str or list[str]=False ,
-                    z_label: str=False,
+                    x_label: str or list[str]=None,
+                    y_label: str or list[str]=None,
+                    z_label: str=None,
                     x_scale: str="linear",
                     y_scale: str="linear",
                     x_lim: tuple=None,
                     y_lim: tuple=None,
                     font_size: int=False,
-                    line_width: int=None) -> matplotlib.pyplot.axis:
-        axis = axis if type(axis) == list else [axis]
-        y_label = y_label if type(y_label) == list else [y_label]
+                    line_width: int=None,
+                    label_pad: float=5) -> matplotlib.pyplot.axis or np.ndarray[matplotlib.pyplot.axis]:
+        """
+        This function does a shit ton for convenience (which also means perhaps something against your will). Most
+        things should be straight forward (such as line_width and font_size), some will be explained in a second,
+        the rest is probably not needed for our plots.
+        How to use 'title', 'x_label', and 'y_label': Use a single string if every axis should get the same string.
+        Use ['example_string'] if only the first axis should get the string. Use ['string_1', 'string_2',
+        ...] if every axis should get a different string. If you want skip an axis, use None (not as string)
+        The same principle holds for 'grid' (just with boolean values instead of strings).
+        If there's issues text me (Jonas).
+        @param axis:
+        @param title:
+        @param grid:
+        @param legend:
+        @param legend_loc:
+        @param legend_columns:
+        @param x_label:
+        @param y_label:
+        @param z_label:
+        @param x_scale:
+        @param y_scale:
+        @param x_lim:
+        @param y_lim:
+        @param font_size:
+        @param line_width:
+        @param label_pad:
+        @return:
+        """
+        if type(axis) == matplotlib.pyplot.axis:
+            axis, shape = [axis], None
+        elif type(axis) == np.ndarray:
+            shape = axis.shape
+            axis = axis if len(shape) == 1 else [ax for ax in axis.flatten()]
+        else:
+            raise ValueError(f"Wrong input type {type(axis)} for axis. Input type of matplotlib.pyplot.axis or an "
+                             f"numpy array containing those axes.")
+        title, x_label, y_label, grid = self._fill_arrays(len(axis), title=title, x_label=x_label, y_label=y_label,
+                                                          grid=grid)
+
         for i, ax in enumerate(axis):
-            if type(title) == str:
-                if i == 0:
-                    ax.set_title(title)
-            else:
-                if len(title) == 1:
-                    ax.set_title(title[0])
-                else:
-                    ax.set_title(title[i])
+            ax.set_title(title[i])
+
             if x_lim is not None: ax.set_xlim(x_lim)
             if y_lim is not None: ax.set_ylim(y_lim)
+
             if font_size:
                 ax.title.set_fontsize(font_size)
                 ax.xaxis.label.set_fontsize(font_size)
@@ -104,14 +138,13 @@ class Helper():
                 if ax.name == "3d":
                     ax.zaxis.label.set_fontsize(font_size)
                 ax.tick_params(axis='both', labelsize=font_size)
-            if grid:
-                axis[0].grid(grid)
-            if x_label:
-                ax.set_xlabel(x_label, labelpad=5)
-            if y_label:
-                ax.set_ylabel(y_label[i], labelpad=5)
-            if z_label:
-                ax.set_zlabel(z_label, labelpad=0)
+
+            ax.grid(grid[i])
+            ax.set_xlabel(x_label[i], labelpad=label_pad)
+            ax.set_ylabel(y_label[i], labelpad=label_pad)
+            if z_label is not None:
+                ax.set_zlabel(z_label, labelpad=label_pad)
+
             ax.set_xscale(x_scale)
             ax.set_yscale(y_scale)
 
@@ -129,4 +162,30 @@ class Helper():
                     axis[0].legend(lines, labels, ncol=legend_columns, prop={"size": font_size}, loc=legend_loc)
                 else:
                     axis[0].legend(lines, labels, ncol=legend_columns, loc=legend_loc)
-        return axis
+        return axis if shape is None else np.asarray(axis).reshape(shape)
+
+    @staticmethod
+    def _fill_arrays(length: int, **kwargs):
+        filled = list()
+        for parameter, argument in kwargs.items():
+            fill_with = None if parameter != "grid" else False
+            if type(argument) == list:
+                if len(argument) == 1:
+                    new = argument+[fill_with for _ in range(length-1)]
+                elif len(argument) == length:
+                    new = argument
+                else:
+                    raise ValueError(f"'{parameter}' was tried to be set for each axis. However, {len(argument)} "
+                                     f"values were supplied while {length} axes exist.")
+            elif type(argument) == str:
+                new = [argument for _ in range(length)]
+            elif argument is None:
+                new = [fill_with for _ in range(length)]
+            elif argument:
+                new = [argument for _ in range(length)]
+            elif parameter == "grid":
+                new = [fill_with for _ in range(length)]
+            else:
+                raise ValueError(f"Check yo inputs for parameter {parameter}.")
+            filled.append(new)
+        return filled
