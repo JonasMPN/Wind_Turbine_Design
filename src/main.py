@@ -125,4 +125,16 @@ if do["plot_BEM_results"]:
     helper.handle_axis(ax, x_label="radial position (m)", grid=True, legend=True,
                        y_label=["angle in degree", "twist in degree", "load in (N/m)", "axial induction","load in (N/m)",
                                 "tangential induction"])
-    helper.handle_figure(fig, size=(7,7), show=True)
+    helper.handle_figure(fig, size=(7,7), close=False)
+
+    fig, ax = plt.subplots(2)
+    ax[0].plot(df_bem_results_original["r_centre"], df_bem_results_original["inflow_velocity"], label="original")
+    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_velocity"], label="new")
+
+    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["inflow_angle"], label="original")
+    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_angle"], label="new")
+
+    helper.handle_axis(ax, x_label="radial position", y_label=["inflow velocity in m/s", "inflow angle in degree"],
+                       legend=True)
+    helper.handle_figure(fig, size=(3,5), close=False)
+    plt.show()
