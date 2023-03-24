@@ -91,8 +91,8 @@ class BEM:
                 continue
             # insert airfoil polars into the interpolator
             df_tmp = pd.read_csv("../data/IEA_10MW/"+row["BlAFID"])
-            self.interp = {"c_l": interpolate.interp1d(np.rad2deg(df_tmp["alpha"]), df_tmp["c_l"]),
-                           "c_d": interpolate.interp1d(np.rad2deg(df_tmp["alpha"]), df_tmp["c_d"])}
+            self.interp = {"c_l": interpolate.interp1d(df_tmp["alpha"], df_tmp["c_l"]),
+                           "c_d": interpolate.interp1d(df_tmp["alpha"], df_tmp["c_d"])}
             a, a_new, a_prime, converged = 1/3, 0, 0, False
             for i in range(max_iterations):
                 # get inflow angle and speed for the airfoil
@@ -139,9 +139,7 @@ class BEM:
             results["a_prime"].append(a_prime)
             results["f_n"].append(self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_n))
             results["f_t"].append(self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_t))
-            results["bec"].append(self._blade_end_correction(which="tud", tip=tip_loss_correction,
-                                                             root=root_loss_correction, radius=row["BlSpn"],
-                                                             tip_seed_ratio=tip_speed_ratio, a=a))
+            results["bec"].append(blade_end_correction)
             results["C_T"].append(self._C_T(a))
             results["alpha"].append(alpha)
             results["alpha_max"].append(df_tmp["alpha"].loc[df_tmp["c_l"].idxmax()])
