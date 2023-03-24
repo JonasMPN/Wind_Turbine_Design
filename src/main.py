@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from BEM import BEM
 from helper_functions import Helper
+from scipy import integrate
 helper = Helper()
 
 rotor_radius = 90
@@ -92,9 +93,10 @@ if do["plot_BEM_results"]:
     df_bem_results_original = pd.read_csv("../data/results/BEM_results_original.dat")
     df_blade_original = pd.read_csv("../data/IEA_10MW/blade_data.txt")
 
-    print("New minus old 'torque': ", np.sum(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"])-
-                                      np.sum(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"]))
-    fig, ax = plt.subplots(3,1)
+    new_torque = integrate.simpson(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"], df_bem_results_new["r_centre"])
+    old_torque = integrate.simpson(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"], df_bem_results_original["r_centre"])
+    print("New minus old torque: ", new_torque-old_torque)
+    fig, ax = plt.subplots(4,1)
     # all about angles
     # ax[0].plot(df["r_centre"], df["alpha"], label="alpha")
     # ax[0].plot(df["r_centre"], df["alpha_max"], label="alpha max")
@@ -103,14 +105,14 @@ if do["plot_BEM_results"]:
     # ax[0].plot(df["r_centre"], df["alpha_best"], label="alpha best")
 
     # all about forces
-    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_t"], label="f_n (new)")
-    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_n"], label="f_t (new)")
-    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_t"], label="f_n (old)")
-    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_t (old)")
+    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_t"], label="f_t (new)")
+    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_t"], label="f_t (old)")
+    ax[2].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_n"], label="f_n (new)")
+    ax[2].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_n (old)")
 
     # change in twist distribution
-    ax[2].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="original")
-    ax[2].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="new")
+    ax[3].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="original")
+    ax[3].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="new")
     helper.handle_axis(ax, x_label="radial position (m)", grid=True, legend=True,
-                       y_label=["angle in degree", "load in (N/m)","twist in degree"])
+                       y_label=["angle in degree", "load in (N/m)", "load in (N/m)", "twist in degree"])
     helper.handle_figure(fig, size=(5,7), show=True)
