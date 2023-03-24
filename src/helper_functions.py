@@ -116,14 +116,11 @@ class Helper():
         @param label_pad:
         @return:
         """
-        if type(axis) == matplotlib.pyplot.axis:
+        if type(axis) != np.ndarray:
             axis, shape = [axis], None
-        elif type(axis) == np.ndarray:
+        else:
             shape = axis.shape
             axis = axis if len(shape) == 1 else [ax for ax in axis.flatten()]
-        else:
-            raise ValueError(f"Wrong input type {type(axis)} for axis. Input type of matplotlib.pyplot.axis or an "
-                             f"numpy array containing those axes.")
         title, x_label, y_label, grid = self._fill_arrays(len(axis), title=title, x_label=x_label, y_label=y_label,
                                                           grid=grid)
         for i, ax in enumerate(axis):
