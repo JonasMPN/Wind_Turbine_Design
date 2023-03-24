@@ -59,6 +59,8 @@ class BEM:
         # Initialise the result containers
         results = {
             "r_centre": list(),     # radius used for the calculations
+            "inflow_velocity": list(), # flow velocity that the airfoil sees
+            "inflow_angle": list(), # angle between the rotational direction and the incoming flow that the airfoil sees
             "a": list(),            # Axial Induction factor
             "a_prime": list(),      # Tangential induction factor
             "f_n": list(),          # Forces normal to the rotor plane in N/m
@@ -135,6 +137,8 @@ class BEM:
                                                                tip_seed_ratio=tip_speed_ratio, university="tud")
             # Assemble the result output structure
             results["r_centre"].append(row["BlSpn"])
+            results["inflow_velocity"].append(inflow_speed)
+            results["inflow_angle"].append(np.rad2deg(phi))
             results["a"].append(a)
             results["a_prime"].append(a_prime)
             results["f_n"].append(self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_n))
