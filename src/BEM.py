@@ -147,7 +147,7 @@ class BEM:
             results["circulation"].append(1/2*inflow_speed*c_l*row["BlChord"])
             results["v0"].append(wind_speed)
             results["tsr"].append(tip_speed_ratio)
-            results["pitch"].append(np.rad2deg(pitch))
+            results["pitch"].append(pitch)
         self.df_results = pd.concat([self.df_results, pd.DataFrame(results)])
         self.df_results.to_csv(self.root+"/BEM_results.dat", index=False)
         return None
@@ -212,6 +212,20 @@ class BEM:
                             university: str,
                             radius: float=None, a: float=None, blade_end_correction_type: str=None, tip: bool=None,
                             root: bool=None) -> tuple:
+        """
+        phi, twist and pitch need to be in rad. Alpha is returned as degree
+        :param phi:
+        :param twist:
+        :param pitch:
+        :param tip_seed_ratio:
+        :param university:
+        :param radius:
+        :param a:
+        :param blade_end_correction_type:
+        :param tip:
+        :param root:
+        :return:
+        """
         alpha = np.rad2deg(phi-(twist+pitch))
         c_l = self.interp["c_l"](alpha)
         c_d = self.interp["c_d"](alpha)
