@@ -95,7 +95,7 @@ if do["plot_BEM_results"]:
 
     new_torque = integrate.simpson(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"], df_bem_results_new["r_centre"])
     old_torque = integrate.simpson(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"], df_bem_results_original["r_centre"])
-    print("New minus old torque: ", new_torque-old_torque)
+    print("New minus old torque: ", new_torque-old_torque, ". Relative change in torque:", (new_torque-old_torque)/old_torque)
     fig, ax = plt.subplots(3,2)
     # all about angles
     # ax[0].plot(df["r_centre"], df["alpha"], label="alpha")
@@ -135,6 +135,6 @@ if do["plot_BEM_results"]:
     ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_angle"], label="new")
 
     helper.handle_axis(ax, x_label="radial position", y_label=["inflow velocity in m/s", "inflow angle in degree"],
-                       legend=True)
+                       legend=True, grid=True)
     helper.handle_figure(fig, size=(3,5), close=False)
     plt.show()
