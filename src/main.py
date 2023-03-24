@@ -84,11 +84,11 @@ if do["plot_results_file"]:
 if do["BEM"]:
     bem = BEM("../data/results")
     bem.set_constants(rotor_radius=99, root_radius=0, n_blades=3, air_density=1.225)
-    bem.solve_TUD("../data/IEA_10MW/blade_data_S.txt", wind_speed=8, tip_speed_ratio=10.58, pitch=0, start_radius=10)
+    bem.solve_TUD("../data/IEA_10MW/blade_data_J.txt", wind_speed=8, tip_speed_ratio=10.58, pitch=0, start_radius=10)
 
 if do["plot_BEM_results"]:
     df_bem_results_new = pd.read_csv("../data/results/BEM_results.dat")
-    df_blade_new = pd.read_csv("../data/IEA_10MW/blade_data_S.txt")
+    df_blade_new = pd.read_csv("../data/IEA_10MW/blade_data_J.txt")
 
     df_bem_results_original = pd.read_csv("../data/results/BEM_results_original.dat")
     df_blade_original = pd.read_csv("../data/IEA_10MW/blade_data.txt")
@@ -96,23 +96,33 @@ if do["plot_BEM_results"]:
     new_torque = integrate.simpson(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"], df_bem_results_new["r_centre"])
     old_torque = integrate.simpson(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"], df_bem_results_original["r_centre"])
     print("New minus old torque: ", new_torque-old_torque)
-    fig, ax = plt.subplots(4,1)
+    fig, ax = plt.subplots(3,2)
     # all about angles
     # ax[0].plot(df["r_centre"], df["alpha"], label="alpha")
     # ax[0].plot(df["r_centre"], df["alpha_max"], label="alpha max")
-    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_max"]-df_bem_results_new["alpha"], label="stall margin")
-    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_best"]-df_bem_results_new["alpha"], label="alpha best - alpha")
-    # ax[0].plot(df["r_centre"], df["alpha_best"], label="alpha best")
+    ax[0,0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_max"]-df_bem_results_new["alpha"],
+                label="stall margin")
+    ax[0,0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_best"]-df_bem_results_new["alpha"],
+                label="alpha best - alpha")
+    # ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_best"], label="alpha best")
 
     # all about forces
-    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_t"], label="f_t (new)")
-    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_t"], label="f_t (old)")
-    ax[2].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_n"], label="f_n (new)")
-    ax[2].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_n (old)")
+    ax[1,0].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_t"], label="f_t (new)")
+    ax[1,0].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_t"], label="f_t (old)")
+    ax[2,0].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_n"], label="f_n (new)")
+    ax[2,0].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_n (old)")
 
     # change in twist distribution
-    ax[3].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="original")
-    ax[3].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="new")
+    ax[0,1].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="original")
+    ax[0,1].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="new")
+
+    ax[1,1].plot(df_bem_results_original["r_centre"], df_bem_results_original["a"], label="original")
+    ax[1,1].plot(df_bem_results_new["r_centre"], df_bem_results_new["a"], label="new")
+
+    ax[2,1].plot(df_bem_results_original["r_centre"], df_bem_results_original["a_prime"], label="original")
+    ax[2,1].plot(df_bem_results_new["r_centre"], df_bem_results_new["a_prime"], label="new")
+
     helper.handle_axis(ax, x_label="radial position (m)", grid=True, legend=True,
-                       y_label=["angle in degree", "load in (N/m)", "load in (N/m)", "twist in degree"])
-    helper.handle_figure(fig, size=(5,7), show=True)
+                       y_label=["angle in degree", "twist in degree", "load in (N/m)", "axial induction","load in (N/m)",
+                                "tangential induction"])
+    helper.handle_figure(fig, size=(7,7), show=True)
