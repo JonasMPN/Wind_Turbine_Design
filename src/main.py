@@ -13,13 +13,13 @@ tip_speed_ratio = 10.58
 
 do = {
     "FAST_to_pandas": False,
-    "openFAST_to_FAST": True,
+    "openFAST_to_FAST": False,
     "NREL": False,
     "DTU": False,
     "IEA": False,
     "plot_results_file": False,
-    "BEM": False,
-    "plot_BEM_results": False,
+    "BEM": True,
+    "plot_BEM_results": True,
 }
 
 if do["FAST_to_pandas"]:
@@ -86,24 +86,31 @@ if do["BEM"]:
     bem.solve_TUD("../data/IEA_10MW/blade_data_S.txt", wind_speed=8, tip_speed_ratio=10.58, pitch=0, start_radius=10)
 
 if do["plot_BEM_results"]:
-    df = pd.read_csv("../data/results/BEM_results.dat")
-    df_original = pd.read_csv("../data/IEA_10MW/blade_data.txt")
-    df_new = pd.read_csv("../data/IEA_10MW/blade_data_S.txt")
+    df_bem_results_new = pd.read_csv("../data/results/BEM_results.dat")
+    df_blade_new = pd.read_csv("../data/IEA_10MW/blade_data_S.txt")
+
+    df_bem_results_original = pd.read_csv("../data/results/BEM_results_original.dat")
+    df_blade_original = pd.read_csv("../data/IEA_10MW/blade_data.txt")
+
+    print("New minus old 'torque': ", np.sum(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"])-
+                                      np.sum(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"]))
     fig, ax = plt.subplots(3,1)
     # all about angles
     # ax[0].plot(df["r_centre"], df["alpha"], label="alpha")
     # ax[0].plot(df["r_centre"], df["alpha_max"], label="alpha max")
-    ax[0].plot(df["r_centre"], df["alpha_max"]-df["alpha"], label="stall margin")
-    ax[0].plot(df["r_centre"], df["alpha_best"]-df["alpha"], label="alpha best - alpha")
+    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_max"]-df_bem_results_new["alpha"], label="stall margin")
+    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["alpha_best"]-df_bem_results_new["alpha"], label="alpha best - alpha")
     # ax[0].plot(df["r_centre"], df["alpha_best"], label="alpha best")
 
     # all about forces
-    ax[1].plot(df["r_centre"], df["f_t"], label="f_n")
-    ax[1].plot(df["r_centre"], df["f_n"], label="f_t")
+    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_t"], label="f_n (new)")
+    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_n"], label="f_t (new)")
+    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_t"], label="f_n (old)")
+    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_t (old)")
 
     # change in twist distribution
-    ax[2].plot(df_original["BlSpn"], df_original["BlTwist"], label="original")
-    ax[2].plot(df_new["BlSpn"], df_new["BlTwist"], label="new")
+    ax[2].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="original")
+    ax[2].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="new")
     helper.handle_axis(ax, x_label="radial position (m)", grid=True, legend=True,
                        y_label=["angle in degree", "load in (N/m)","twist in degree"])
     helper.handle_figure(fig, size=(5,7), show=True)
