@@ -94,7 +94,8 @@ class Helper():
         the rest is probably not needed for our plots.
         How to use 'title', 'x_label', and 'y_label': Use a single string if every axis should get the same string.
         Use ['example_string'] if only the first axis should get the string. Use ['string_1', 'string_2',
-        ...] if every axis should get a different string. If you want skip an axis, use None (not as string)
+        ...] if every axis should get a different string. If you want skip an axis, use None (not as string). If you
+        have a grid of axes, the indexing will be done row wise (first through the first row, then the second, ...)
         The same principle holds for 'grid' (just with boolean values instead of strings).
         If there's issues text me (Jonas).
         @param axis:
@@ -125,7 +126,6 @@ class Helper():
                              f"numpy array containing those axes.")
         title, x_label, y_label, grid = self._fill_arrays(len(axis), title=title, x_label=x_label, y_label=y_label,
                                                           grid=grid)
-
         for i, ax in enumerate(axis):
             ax.set_title(title[i])
 
