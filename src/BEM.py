@@ -93,7 +93,7 @@ class BEM:
             df_tmp = pd.read_csv("../data/IEA_10MW/"+row["BlAFID"])
             self.interp = {"c_l": interpolate.interp1d(df_tmp["alpha"], df_tmp["c_l"]),
                            "c_d": interpolate.interp1d(df_tmp["alpha"], df_tmp["c_d"])}
-            a, a_new, a_prime, converged = 1/3, 0, 0, False
+            a, a_new, a_prime, converged = 0.8, 0.1, 0, False
             for i in range(max_iterations):
                 # get inflow angle and speed for the airfoil
                 phi, inflow_speed = self._flow(a=a, a_prime=a_prime, wind_speed=wind_speed, rotational_speed=omega,
