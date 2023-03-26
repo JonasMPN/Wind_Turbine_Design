@@ -95,7 +95,7 @@ if do["plot_BEM_results"]:
 
     new_torque = integrate.simpson(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"], df_bem_results_new["r_centre"])
     old_torque = integrate.simpson(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"], df_bem_results_original["r_centre"])
-    print("New minus old torque: ", new_torque-old_torque)
+    print("New minus old torque: ", new_torque-old_torque, ". Relative change in torque:", (new_torque-old_torque)/old_torque)
     fig, ax = plt.subplots(3,2)
     # all about angles
     # ax[0].plot(df["r_centre"], df["alpha"], label="alpha")
@@ -113,8 +113,11 @@ if do["plot_BEM_results"]:
     ax[2,0].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_n (old)")
 
     # change in twist distribution
-    ax[0,1].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="original")
-    ax[0,1].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="new")
+    ax[0,1].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="twist original")
+    ax[0,1].plot(df_blade_new["BlSpn"], df_blade_new["BlTwist"], label="twist new")
+    # change in chord distribution
+    ax[0,1].plot(df_blade_original["BlSpn"], df_blade_original["BlChord"], label="chord original")
+    ax[0,1].plot(df_blade_new["BlSpn"], df_blade_new["BlChord"], label="chord new")
 
     ax[1,1].plot(df_bem_results_original["r_centre"], df_bem_results_original["a"], label="original")
     ax[1,1].plot(df_bem_results_new["r_centre"], df_bem_results_new["a"], label="new")
@@ -123,8 +126,8 @@ if do["plot_BEM_results"]:
     ax[2,1].plot(df_bem_results_new["r_centre"], df_bem_results_new["a_prime"], label="new")
 
     helper.handle_axis(ax, x_label="radial position (m)", grid=True, legend=True,
-                       y_label=["angle in degree", "twist in degree", "load in (N/m)", "axial induction","load in (N/m)",
-                                "tangential induction"])
+                       y_label=["angle in degree", "twist (°), chord (m)", "load in (N/m)", "axial induction",
+                                "load in (N/m)", "tangential induction"])
     helper.handle_figure(fig, size=(7,7), close=False)
 
     fig, ax = plt.subplots(2)
@@ -135,6 +138,6 @@ if do["plot_BEM_results"]:
     ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_angle"], label="new")
 
     helper.handle_axis(ax, x_label="radial position", y_label=["inflow velocity in m/s", "inflow angle in degree"],
-                       legend=True)
+                       legend=True, grid=True)
     helper.handle_figure(fig, size=(3,5), close=False)
     plt.show()
