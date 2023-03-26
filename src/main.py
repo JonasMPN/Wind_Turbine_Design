@@ -1,6 +1,5 @@
 import data_handling
 from blade_design import BladeApproximation
-import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from BEM import BEM
@@ -15,6 +14,8 @@ tip_speed_ratio = 10.58
 do = {
     "FAST_to_pandas": False,
     "openFAST_to_FAST": False,
+    "scale_rotor": False,
+    "modify_rotor": True,
     "NREL": False,
     "DTU": False,
     "IEA": False,
@@ -31,8 +32,14 @@ if do["openFAST_to_FAST"]:
     data_handling.prepare_openFAST_to_FAST(dir_openFAST_data="../data/openFAST",
                                            aero_dyn_blade_file="IEA-10.0-198-RWT_AeroDyn15_blade.dat",
                                            elasto_dyn_blade_file= "IEA-10.0-198-RWT_ElastoDyn_blade.dat",
-                                           dir_FAST="../data/FAST_integration",
-                                           incorporate_external={"new_blade_data.txt": ["BlTwist"]})
+                                           dir_FAST="../data/FAST_integration")
+
+if do["scale_rotor"]:
+    data_handling.scale_blade_by_R(dir_FAST="../data/FAST_integration", file_type="dat", old_radius=99,
+                                   new_radius=rotor_radius)
+
+if do["modify_rotor"]:
+    data_handling.incorporate_modifications(dir_FAST="../data/FAST_integration", file="modifications_blade_J.dat")
 
 if do["NREL"]:
     NREL = BladeApproximation(root_dir="../data",
@@ -83,15 +90,16 @@ if do["plot_results_file"]:
 
 if do["BEM"]:
     bem = BEM("../data/results")
-    bem.set_constants(rotor_radius=99, root_radius=0, n_blades=3, air_density=1.225)
-    bem.solve_TUD("../data/IEA_10MW/blade_data_J.txt", wind_speed=8, tip_speed_ratio=10.58, pitch=0, start_radius=10)
+    bem.set_constants(rotor_radius=90, root_radius=0, n_blades=3, air_density=1.225)
+    bem.solve_TUD("../data/FAST_integration/blade_aero_dyn_modified.dat", wind_speed=8, tip_speed_ratio=10.58, pitch=0,
+                  start_radius=10)
 
 if do["plot_BEM_results"]:
     df_bem_results_new = pd.read_csv("../data/results/BEM_results.dat")
-    df_blade_new = pd.read_csv("../data/IEA_10MW/blade_data_J.txt")
+    df_blade_new = pd.read_csv("../data/FAST_integration/blade_aero_dyn_modified.dat")
 
     df_bem_results_original = pd.read_csv("../data/results/BEM_results_original.dat")
-    df_blade_original = pd.read_csv("../data/IEA_10MW/blade_data.txt")
+    df_blade_original = pd.read_csv("../data/FAST_integration/blade_aero_dyn_R_scaled.dat")
 
     new_torque = integrate.simpson(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"], df_bem_results_new["r_centre"])
     old_torque = integrate.simpson(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"], df_bem_results_original["r_centre"])
