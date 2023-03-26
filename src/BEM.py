@@ -92,7 +92,9 @@ class BEM:
             if row["BlSpn"] < start_radius:
                 continue
             # insert airfoil polars into the interpolator
-            df_tmp = pd.read_csv("../data/IEA_10MW/"+row["BlAFID"])
+            airfoil_id = int(row["BlAFID"])-1 if row["BlAFID"]>10 else f"0{int(row['BlAFID'])-1}"
+            polar_file = f"IEA-10.0-198-RWT_AeroDyn15_Polar_{airfoil_id}.dat"
+            df_tmp = pd.read_csv("../data/FAST_integration/polars/"+polar_file)
             self.interp = {"c_l": interpolate.interp1d(df_tmp["alpha"], df_tmp["c_l"]),
                            "c_d": interpolate.interp1d(df_tmp["alpha"], df_tmp["c_d"])}
             a, a_new, a_prime, converged = 0.8, 0.1, 0, False
