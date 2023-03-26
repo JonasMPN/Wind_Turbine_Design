@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import os, shutil
 from src.helper_functions import Helper
+from copy import copy
 helper = Helper()
 
 
@@ -100,7 +101,6 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
                              aero_dyn_blade_file: str,
                              elasto_dyn_blade_file: str,
                              dir_FAST: str,
-                             incorporate_external: dict=None,
                              file_type: str="dat") -> None:
     """
     THIS FUNCTION OVERWRITES THE DIRECTORY "dir_FAST"!!!
@@ -149,16 +149,7 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
 
     df_blade_aero = pd.read_csv(dir_openFAST_data+"/"+aero_dyn_blade_file, skiprows=6, delim_whitespace=True,
                                 names=["BlSpn", "BlCrvAC", "BlSwpAC", "BlCrvAng", "BlTwist", "BlChord", "BlAFID"])
-    if incorporate_external is not None:
-        for file, parameters in incorporate_external.items():
-            df_tmp = pd.read_csv(dir_openFAST_data+"/"+file)
-            for param in parameters:
-                try:
-                    df_blade_aero[param] = df_tmp[param]
-                    print(f"Parameter {param} was taken from {file} to overwrite prior openFAST data.")
-                except KeyError:
-                    pass
-    df_blade_aero.to_csv(dir_FAST+f"/blade_aero_dyn.{file_type}", index=False)
+    df_blade_aero.to_csv(dir_FAST+f"/blade_aero_dyn_original.{file_type}", index=False)
 
     use_lines = {"skiprows": None, "nrows": None}
     with open(dir_openFAST_data+"/"+elasto_dyn_blade_file, "r") as f:
@@ -171,6 +162,50 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
                     use_lines["nrows"] = row_number-use_lines["skiprows"]
     df_structure = pd.read_csv(dir_openFAST_data+"/"+elasto_dyn_blade_file, delim_whitespace=True,
                                names=["BlFract","PitchAxis","StrcTwst", "BMassDen", "FlpStff", "EdgStff"], **use_lines)
-    df_structure.to_csv(dir_FAST+f"/blade_elasto_dyn.{file_type}", index=False)
+    df_structure.to_csv(dir_FAST+f"/blade_elasto_dyn_original.{file_type}", index=False)
+
+
+def scale_blade_by_R(dir_FAST: str, file_type: str, old_radius: float, new_radius: float) -> None:
+    df_aero_original = pd.read_csv(dir_FAST+"/blade_aero_dyn_original."+file_type)
+    df_elasto_original = pd.read_csv(dir_FAST+"/blade_elasto_dyn_original."+file_type)
+    df_aero_R_scaled = copy(df_aero_original)
+    df_elasto_R_scaled = copy(df_elasto_original)
+    scaling_fac = new_radius/old_radius
+
+    # scale aero file
+    for parameter in ["BlSpn", "BlChord"]:
+        df_aero_R_scaled[parameter] *= scaling_fac
+
+    # scale elasto file
+    for parameter, order in {"BMassDen": 2, "FlpStff": 4, "EdgStff": 4}.items():
+        df_elasto_R_scaled[parameter] *= scaling_fac**order
+
+    # save scaled files
+    df_aero_R_scaled.to_csv(dir_FAST+"/blade_aero_dyn_R_scaled."+file_type, index=False)
+    df_elasto_R_scaled.to_csv(dir_FAST+"/blade_elasto_dyn_R_scaled."+file_type, index=False)
+    return
+
+def incorporate_modifications(dir_FAST: str, file: str) -> None:
+    df_aero_R_scaled = pd.read_csv(dir_FAST+"/blade_aero_dyn_R_scaled.dat")
+    df_elasto_R_scaled = pd.read_csv(dir_FAST+"/blade_elasto_dyn_R_scaled.dat")
+    df_aero_modified = copy(df_aero_R_scaled)
+    df_elasto_modified = copy(df_elasto_R_scaled)
+    df_modifications = pd.read_csv(dir_FAST+"/"+file)
+    if not df_modifications["BlSpn"].equals(df_aero_R_scaled["BlSpn"]):
+        raise ValueError("The radial positions of the R-scaled blade and the modifications must be the same, "
+                         "but they are not.")
+    # change blade properties
+    df_aero_modified["BlChord"] = df_modifications["BlChord"]
+    df_aero_modified["BlTwist"] = df_modifications["BlTwist"]
+    df_elasto_modified["StrcTwst"] = df_modifications["BlTwist"]
+
+    # scale blade properties from chord change
+    chord_fac = df_modifications["BlChord"]/df_aero_R_scaled["BlChord"]
+    for parameter, order in {"BMassDen": 2, "FlpStff": 4, "EdgStff": 4}.items():
+        df_elasto_modified[parameter] *= chord_fac**order
+
+    # save modified/scaled files
+    df_aero_modified.to_csv(dir_FAST+"/blade_aero_dyn_modified.dat", index=False)
+    df_elasto_modified.to_csv(dir_FAST+"/blade_elasto_dyn_modified.dat", index=False)
 
 
