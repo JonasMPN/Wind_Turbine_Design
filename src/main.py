@@ -15,14 +15,14 @@ do = {
     "FAST_to_pandas": False,
     "openFAST_to_FAST": False,
     "scale_rotor": False,
-    "modify_rotor": True,
+    "modify_rotor": False,
     "optimum_NREL": False,
     "optimum_DTU": False,
     "optimum_IEA": False,
     "plot_optimum_file": False,
-    "compare_optimal_actual": True,
+    "compare_optimal_actual": False,
     "BEM": False,
-    "plot_BEM_results": False,
+    "plot_BEM_results": True,
 }
 
 if do["FAST_to_pandas"]:
@@ -99,17 +99,17 @@ if do["BEM"]:
     bem = BEM("../data/results")
     bem.set_constants(rotor_radius=90, root_radius=0, n_blades=3, air_density=1.225)
     bem.solve_TUD("../data/FAST_integration/blade_aero_dyn_modified.dat", wind_speed=8, tip_speed_ratio=10.58, pitch=0,
-                  start_radius=10)
+                  start_radius=4)
 
 if do["plot_BEM_results"]:
-    df_bem_results_new = pd.read_csv("../data/results/BEM_results.dat")
+    df_bem_results_new = pd.read_csv("../data/results/BEM_results_modified.dat")
     df_blade_new = pd.read_csv("../data/FAST_integration/blade_aero_dyn_modified.dat")
 
-    df_bem_results_original = pd.read_csv("../data/results/BEM_results_original.dat")
+    df_bem_results_R_scaled = pd.read_csv("../data/results/BEM_results_R_scaled.dat")
     df_blade_original = pd.read_csv("../data/FAST_integration/blade_aero_dyn_R_scaled.dat")
 
     new_torque = integrate.simpson(df_bem_results_new["f_t"]*df_bem_results_new["r_centre"], df_bem_results_new["r_centre"])
-    old_torque = integrate.simpson(df_bem_results_original["f_t"]*df_bem_results_original["r_centre"], df_bem_results_original["r_centre"])
+    old_torque = integrate.simpson(df_bem_results_R_scaled["f_t"]*df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["r_centre"])
     print("New minus old torque: ", new_torque-old_torque, ". Relative change in torque:", (new_torque-old_torque)/old_torque)
     fig, ax = plt.subplots(3,2)
     # all about angles
@@ -123,9 +123,9 @@ if do["plot_BEM_results"]:
 
     # all about forces
     ax[1,0].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_t"], label="f_t (new)")
-    ax[1,0].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_t"], label="f_t (old)")
+    ax[1,0].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["f_t"], label="f_t (old)")
     ax[2,0].plot(df_bem_results_new["r_centre"], df_bem_results_new["f_n"], label="f_n (new)")
-    ax[2,0].plot(df_bem_results_original["r_centre"], df_bem_results_original["f_n"], label="f_n (old)")
+    ax[2,0].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["f_n"], label="f_n (old)")
 
     # change in twist distribution
     ax[0,1].plot(df_blade_original["BlSpn"], df_blade_original["BlTwist"], label="twist original")
@@ -134,10 +134,10 @@ if do["plot_BEM_results"]:
     ax[0,1].plot(df_blade_original["BlSpn"], df_blade_original["BlChord"], label="chord original")
     ax[0,1].plot(df_blade_new["BlSpn"], df_blade_new["BlChord"], label="chord new")
 
-    ax[1,1].plot(df_bem_results_original["r_centre"], df_bem_results_original["a"], label="original")
+    ax[1,1].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["a"], label="original")
     ax[1,1].plot(df_bem_results_new["r_centre"], df_bem_results_new["a"], label="new")
 
-    ax[2,1].plot(df_bem_results_original["r_centre"], df_bem_results_original["a_prime"], label="original")
+    ax[2,1].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["a_prime"], label="original")
     ax[2,1].plot(df_bem_results_new["r_centre"], df_bem_results_new["a_prime"], label="new")
 
     helper.handle_axis(ax, x_label="radial position (m)", grid=True, legend=True,
@@ -146,10 +146,10 @@ if do["plot_BEM_results"]:
     helper.handle_figure(fig, size=(7,7), close=False)
 
     fig, ax = plt.subplots(2)
-    ax[0].plot(df_bem_results_original["r_centre"], df_bem_results_original["inflow_velocity"], label="original")
+    ax[0].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["inflow_velocity"], label="original")
     ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_velocity"], label="new")
 
-    ax[1].plot(df_bem_results_original["r_centre"], df_bem_results_original["inflow_angle"], label="original")
+    ax[1].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["inflow_angle"], label="original")
     ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_angle"], label="new")
 
     helper.handle_axis(ax, x_label="radial position", y_label=["inflow velocity in m/s", "inflow angle in degree"],
