@@ -55,11 +55,11 @@ class Helper():
                       save_to: str=False,
                       show: bool=False,
                       size: tuple=(18.5, 10),
-                      inches: int=100,
+                      dpi: int=1000,
                       tight_layout: bool=True,
                       close: bool=True) -> matplotlib.pyplot.figure:
         figure.set_size_inches(size)
-        figure.set_dpi(inches)
+        figure.set_dpi(dpi)
         figure.set_tight_layout(tight_layout)
         if save_to:
             figure.savefig(save_to)
