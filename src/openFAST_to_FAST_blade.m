@@ -1,24 +1,33 @@
+% This file needs to be run before openFAST_to_FAST_airfoil
 clear
-radius = 85; % this is the radius to which all data from the the directory FAST_integration will be scaled
-openFAST_data_file_type = "dat";
+
 data_root = "../data/FAST_integration";
-file_to_change = append(data_root, "/IEA_10MW.mat");
+openFAST_data_file_type = "dat";
+file_to_change = append(data_root, "/IEA_7MW.mat");
 base = load(file_to_change);
-aero_data = readtable(append(data_root, "/blade_aero_dyn.",openFAST_data_file_type));
-structure_data = readtable(append(data_root, "/blade_elasto_dyn.",openFAST_data_file_type));
+aero_data = readtable(append(data_root, "/blade_aero_dyn_modified.", openFAST_data_file_type));
+structure_data = readtable(append(data_root, "/blade_elasto_dyn_modified.", openFAST_data_file_type));
+
+%% check whether an element is at r=0m
+if aero_data.BlSpn(1) == 0
+    aero_data(1,:) = [];
+    structure_data(1,:) = [];
+end
 n_positions = size(aero_data.BlSpn);
-scaling_fac = radius/max(aero_data.BlSpn);
-thickness_fac = 1;
-% output total mass of blade
 
 %% change Radius
-base.Blade.Radius = aero_data.BlSpn.*scaling_fac;
+base.Blade.Radius = aero_data.BlSpn;
 
 %% change Chord
-base.Blade.Chord = aero_data.BlChord.*scaling_fac;
+base.Blade.Chord = aero_data.BlChord;
 
-%% change Twist
-base.Blade.Twist = aero_data.BlTwist;
+%% change Twist and necessary pitch control values
+fine_pitch = aero_data.BlTwist(end);
+base.Blade.Twist = aero_data.BlTwist-fine_pitch;
+base.Control.Pitch.Fine = fine_pitch;
+base.Control.Pitch.Min = -2+fine_pitch;
+print("The twist distribution has been reset to be zero at the tip." + ...
+    "The fine pitch was adjusted accordingly.")
 
 %% change NFoil
 base.Blade.NFoil = double(1:n_positions)';
@@ -27,13 +36,13 @@ base.Blade.NFoil = double(1:n_positions)';
 base.Blade.IFoil = double(1:n_positions)';
 
 %% change Mass density
-base.Blade.Mass = structure_data.BMassDen.*scaling_fac^2;
+base.Blade.Mass = structure_data.BMassDen;
 
 %% change flap stiffness
-base.Blade.EIflap = structure_data.FlpStff.*scaling_fac;
+base.Blade.EIflap = structure_data.FlpStff;
 
 %% change edge stiffness
-base.Blade.EIedge = structure_data.EdgStff.*scaling_fac;
+base.Blade.EIedge = structure_data.EdgStff;
 
 %% change pitch axis
 base.Blade.PitchAxis = structure_data.PitchAxis;
