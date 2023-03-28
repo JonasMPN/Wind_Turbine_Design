@@ -68,22 +68,17 @@ class AirfoilInterpolator:
 def plot_results(file_path: str, plot_dir: str) -> None:
     df = pd.read_csv(file_path)
     names = df["name"].unique()
-    fig, axes = plt.subplots(4,1)
+    fig, axes = plt.subplots(3,1)
     for name in names:
         df_tmp = df[df["name"]==name]
         axes[0].plot(df_tmp["radius"], df_tmp["chord"], label=name)
         axes[1].plot(df_tmp["radius"], df_tmp["twist"])
         axes[2].plot(df_tmp["radius"], df_tmp["l2d"])
-        axes[3].plot(df_tmp["radius"], df_tmp["l2d"]*df_tmp["chord"])
-        power_indicator = np.trapz(df_tmp["l2d"]*df_tmp["chord"], df_tmp["radius"])
-    helper.handle_axis([ax for ax in axes],
-                       title=f"NREL 5MW, DTU 10MW, and IEA 10MW in comparison",
-                       x_label="Radius in m",
-                       y_label=["chord in m", "twist in °", r"$(c_l/c_d)_{max}$", r"'load distribution'"],
-                       legend=True,
-                       font_size=20,
-                       line_width=4)
-    helper.handle_figure(fig, file_figure=plot_dir+"/"+f"{names}"+".png", size=(18.5, 14))
+    helper.handle_axis(axes,
+                       title=["NREL 5MW, DTU 10MW, and IEA 10MW in comparison"], x_label="Radius (m)",
+                       y_label=["chord (m)", "twist (°)", r"$c_l/c_d$ (-)"], legend=True, font_size=20,
+                       line_width=4, grid=True)
+    helper.handle_figure(fig, save_to=plot_dir+"/"+f"{names}"+".png", size=(18.5, 14))
 
 
 def FAST_to_pandas(dir_FAST_data: str,
@@ -174,3 +169,41 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
     df_structure.to_csv(dir_FAST+f"/blade_elasto_dyn.{file_type}", index=False)
 
 
+def compare_optimal_actual(dir_save: str,
+                           file_optimum: str,
+                           file_actual: str,
+                           actual_radius: float,
+                           aero_max_radius: float,
+                           skip_rows: int=0,
+                           skip_first_percentage: float=None):
+    df_optimum= pd.read_csv(file_optimum)
+    df_optimum = df_optimum[df_optimum["name"] == "IEA_10MW"]
+    df_optimum.reset_index()
+    df_actual = pd.read_csv(file_actual)
+    fig, axes = plt.subplots(2)
+
+    axes[0].plot(df_actual["BlSpn"]/actual_radius, df_actual["BlChord"]/actual_radius, label="real")
+    axes[0].plot(df_optimum["radius"]/aero_max_radius, df_optimum["chord"]/aero_max_radius, label="aero max")
+
+    axes[1].plot(df_actual["BlSpn"]/actual_radius, df_actual["BlTwist"], label="real twist")
+    axes[1].plot(df_optimum["radius"]/aero_max_radius, df_optimum["twist"], label="aero max twist")
+
+    positions, stall_margin = list(), list()
+    df_optimum["r/R"] = df_optimum["radius"]/aero_max_radius
+    for i, row in df_optimum.iterrows():
+        if i < skip_rows and skip_first_percentage is None:
+            continue
+        if skip_first_percentage is not None:
+            if row["r/R"] < skip_first_percentage/100:
+                continue
+        df = pd.read_csv(row["airfoil"])
+        alpha_cl_max = df["alpha"][np.argmax(df["c_l"])]
+        alpha_l2d_max = df["alpha"][np.argmax(df["c_l"]/df["c_d"])]
+        stall_margin.append(alpha_cl_max-alpha_l2d_max)
+        positions.append(row["r/R"])
+
+    axes[1].plot(positions , stall_margin, label="aero max stall margin")
+    helper.handle_axis(axes, title="Comparison of the scaled 10MW IEA to its aerodynamic optimised pendant",
+                       x_label="r/R (-)", y_label=["chord/R (-)", "angle (°)"], grid=True, legend=True, line_width=4,
+                       font_size=20)
+    helper.handle_figure(fig, save_to=dir_save+"/actual_optimum_comparison.png", size=(18.5, 14))
