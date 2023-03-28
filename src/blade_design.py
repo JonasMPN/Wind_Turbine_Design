@@ -18,12 +18,12 @@ class BladeApproximation:
         self.file_blade = self.dir_blade+"/"+blade_filename
         self.dir_save = root_dir+"/"+save_dir
         self.blade_name = blade_name
-        self.file_save = self.dir_save+"/results.dat"
+        self.file_save = self.dir_save+"/optimum_results.dat"
         helper.create_dir(root_dir+"/"+save_dir)
         try:
             self.df_results = pd.read_csv(self.file_save)
         except FileNotFoundError:
-            self.df_results = pd.DataFrame(columns=["name", "radius", "chord", "twist", "l2d", "load"])
+            self.df_results = pd.DataFrame(columns=["name", "radius", "chord", "twist", "l2d", "airfoil"])
 
         self.df_blade = pd.read_csv(self.file_blade)
         self.tsr = None
@@ -72,10 +72,9 @@ class BladeApproximation:
         self.column_alpha = column_alpha
 
     def chord_and_twist(self,
+                        actual_radius: float,
                         skip_rows: int=0,
-                        skip_first_percentage: float=None,
-                        save_to_file: bool=True,
-                        plot: bool=False) -> None:
+                        skip_first_percentage: float=None) -> None:
         """
         save_to_file overrides any data that has the same blade name
         :param skip_rows:
@@ -84,13 +83,14 @@ class BladeApproximation:
         :param plot:
         :return:
         """
-        self.df_blade["r/R"] = self.df_blade[self.column_positions]/self.df_blade[self.column_positions].max()
+        self.df_blade["r/R"] = self.df_blade[self.column_positions]/actual_radius
         if self.interp is not None:
             df_profiles = self.interp.get_df_profiles()
             alphas = df_profiles[self.column_alpha].unique()
             rel_thicknesses = df_profiles[self.column_rel_thickness].unique()
             rel_thicknesses = np.sort(np.asarray(rel_thicknesses))[::-1]
         positions, twist, chord, l2ds, all_c_l, all_c_d = list(), list(), list(), list(), list(), list()
+        airfoils_used = list()
         inflow_angles = list()
         for i, row in self.df_blade.iterrows():
             if i < skip_rows and skip_first_percentage is None:
@@ -102,6 +102,7 @@ class BladeApproximation:
             if self.interp is None:
                 airfoil_path = row[self.column_airfoil_path]
                 airfoil_path = airfoil_path if type(airfoil_path) is str else str(int(airfoil_path))
+                airfoils_used.append(self.dir_blade+"/"+airfoil_path)
                 df_airfoil = pd.read_csv(self.dir_blade+"/"+airfoil_path)
                 lift2drag = df_airfoil[self.column_cl]/df_airfoil[self.column_cd]
                 c_l = df_airfoil[self.column_cl].iloc[np.argmax(lift2drag)]
@@ -109,6 +110,7 @@ class BladeApproximation:
                 alpha = df_airfoil[self.column_alpha].iloc[np.argmax(lift2drag)]
             else:
                 rel_thickness = row[self.column_rel_thickness]
+                airfoils_used.append("interpolated")
                 for inner, outer in zip(rel_thicknesses[:-1], rel_thicknesses[1:]):
                     if rel_thickness == inner or rel_thickness == outer:
                         c_ls = df_profiles[df_profiles[self.column_rel_thickness] == rel_thickness][self.column_cl]
@@ -133,7 +135,7 @@ class BladeApproximation:
                 alpha = alphas[np.argmax(lift2drag)]
 
             positions.append(row["r/R"]*self.R)
-            l2ds.append(lift2drag[np.argmax(lift2drag)])
+            l2ds.append(max(lift2drag))
             fac = self.tsr*row["r/R"]*(1+2/(9*self.tsr**2*row["r/R"]**2))
             chord.append(16*np.pi*self.R/(9*self.tsr*c_l*self.B*np.sqrt(4/9+fac**2)))
             inflow_angle = np.arctan(2/(3*fac))*180/np.pi
@@ -142,34 +144,16 @@ class BladeApproximation:
             all_c_l.append(c_l)
             all_c_d.append(c_d)
 
-        twist = [section_twist-twist[-1] for section_twist in twist]
-        power_indicator = np.trapz(np.asarray(l2ds)*np.asarray(chord), positions)
-        if plot:
-            fig, axes = plt.subplots(4, 1)
-            axes[0].plot(positions, chord)
-            axes[1].plot(positions, twist)
-            axes[2].plot(positions, l2ds)
-            axes[3].plot(positions, np.asarray(l2ds)*np.asarray(chord))
-            helper.handle_axis([ax for ax in axes],
-                               title=f"Power indicator: {power_indicator}",
-                               x_label="Radius in m",
-                               y_label=["chord in m", "twist in °", r"$c_l/c_d$", r"load distribution"],
-                               font_size=20,
-                               line_width=5)
-            helper.handle_figure(fig, file_figure=self.dir_save+"/"+self.blade_name+".png")
-        if save_to_file:
-            if self.blade_name in self.df_results["name"].unique():
-                self.df_results = self.df_results[self.df_results["name"] != self.blade_name]
-            load = np.sin(inflow_angles)*np.asarray(all_c_l)-np.cos(inflow_angles)*np.asarray(all_c_d)
-            self.df_results = pd.concat([self.df_results,
-                                         pd.DataFrame({"name": self.blade_name,
-                                                       "radius": positions,
-                                                       "chord": chord,
-                                                       "twist": twist,
-                                                       "l2d": l2ds,
-                                                       "load": load})])
-            self.df_results.to_csv(self.file_save, index=False)
-        else:
-            print("The results are not exported to any file. Set 'save_to_file' or 'plot' to true.")
+        if self.blade_name in self.df_results["name"].unique():
+            self.df_results = self.df_results[self.df_results["name"] != self.blade_name]
+        self.df_results = pd.concat([self.df_results,
+                                     pd.DataFrame({"name": self.blade_name,
+                                                   "radius": positions,
+                                                   "chord": chord,
+                                                   "twist": twist,
+                                                   "l2d": l2ds,
+                                                   "airfoil": airfoils_used})])
+        self.df_results.to_csv(self.file_save, index=False)
+        return
 
 
