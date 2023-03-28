@@ -15,12 +15,13 @@ tip_speed_ratio = 10.58
 do = {
     "FAST_to_pandas": False,
     "openFAST_to_FAST": False,
-    "NREL": False,
-    "DTU": False,
-    "IEA": False,
-    "plot_results_file": False,
-    "BEM": True,
-    "plot_BEM_results": True,
+    "optimum_NREL": False,
+    "optimum_DTU": False,
+    "optimum_IEA": False,
+    "plot_optimum_file": False,
+    "compare_optimal_actual": True,
+    "BEM": False,
+    "plot_BEM_results": False,
 }
 
 if do["FAST_to_pandas"]:
@@ -34,7 +35,7 @@ if do["openFAST_to_FAST"]:
                                            dir_FAST="../data/FAST_integration",
                                            incorporate_external={"new_blade_data.txt": ["BlTwist"]})
 
-if do["NREL"]:
+if do["optimum_NREL"]:
     NREL = BladeApproximation(root_dir="../data",
                               blade_dir="NREL_5MW",
                               blade_filename="NREL_5MW_blade_data.txt",
@@ -46,9 +47,9 @@ if do["NREL"]:
     NREL.set_blade_columns(column_positions="RNodes",
                            column_airfoil_path="Airfoil")
     NREL.set_airfoil_columns()
-    NREL.chord_and_twist(skip_first_percentage=15)
+    NREL.chord_and_twist(actual_radius=63, skip_first_percentage=15)
 
-if do["DTU"]:
+if do["optimum_DTU"]:
     DTU = BladeApproximation(root_dir="../data",
                              blade_dir="DTU_10MW",
                              blade_filename="blade_data_new.txt",
@@ -61,25 +62,31 @@ if do["DTU"]:
                           column_airfoil_path="airfoil",
                           interpolation_required=True)
     DTU.set_airfoil_columns()
-    DTU.chord_and_twist(skip_first_percentage=15)
+    DTU.chord_and_twist(actual_radius=89.15, skip_first_percentage=15)
 
-if do["IEA"]:
+if do["optimum_IEA"]:
     IEA = BladeApproximation(root_dir="../data",
                              blade_dir="IEA_10MW",
                              blade_filename="blade_data.txt",
                              save_dir="results",
                              blade_name="IEA_10MW")
-    IEA.set_rotor(tip_speed_ratio= 10.77,
+    IEA.set_rotor(tip_speed_ratio= tip_speed_ratio,
                   rotor_radius=rotor_radius,
                   number_of_blades=number_of_blades)
     IEA.set_blade_columns(column_positions="BlSpn",
                           column_airfoil_path="BlAFID")
     IEA.set_airfoil_columns()
-    IEA.chord_and_twist(skip_first_percentage=15)
+    IEA.chord_and_twist(actual_radius=99, skip_first_percentage=15)
 
-if do["plot_results_file"]:
-    data_handling.plot_results(file_path="../data/results/results.dat",
+if do["plot_optimum_file"]:
+    data_handling.plot_results(file_path="../data/results/optimum_results.dat",
                                plot_dir="../data/results")
+
+if do["compare_optimal_actual"]:
+    data_handling.compare_optimal_actual(dir_save="../data/results",
+                                         file_optimum="../data/results/optimum_results.dat",
+                                         file_actual="../data/IEA_10MW/blade_data.txt", actual_radius=99,
+                                         aero_max_radius=90, skip_first_percentage=10)
 
 if do["BEM"]:
     bem = BEM("../data/results")
