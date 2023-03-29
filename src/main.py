@@ -36,8 +36,8 @@ if do["openFAST_to_FAST"]:
                                            dir_FAST="../data/FAST_integration")
 
 if do["scale_rotor"]:
-    data_handling.scale_blade_by_R(dir_FAST="../data/FAST_integration", file_type="dat", old_radius=99,
-                                   new_radius=rotor_radius)
+    data_handling.scale_blade_by_R(dir_FAST="../data/FAST_integration", file_type="dat", old_radius=99.155-2.4,
+                                   new_radius=rotor_radius-2.4)
 
 if do["modify_rotor"]:
     data_handling.incorporate_modifications(dir_FAST="../data/FAST_integration", file="modifications_blade_J.dat")
@@ -97,9 +97,11 @@ if do["compare_optimal_actual"]:
 
 if do["BEM"]:
     bem = BEM("../data/results")
-    bem.set_constants(rotor_radius=90, root_radius=0, n_blades=3, air_density=1.225)
+    bem.set_constants(rotor_radius=90, root_radius=2.4, n_blades=3, air_density=1.225)
     bem.solve_TUD("../data/FAST_integration/blade_aero_dyn_modified.dat", wind_speed=8, tip_speed_ratio=10.58, pitch=0,
                   start_radius=4)
+    data_handling.calculate_root_moments("../data/results/BEM_results.dat",
+                                         json_file="../data/results/root_moments.json", turbine_name="modified")
 
 if do["plot_BEM_results"]:
     df_bem_results_new = pd.read_csv("../data/results/BEM_results_modified.dat")
@@ -146,11 +148,11 @@ if do["plot_BEM_results"]:
     helper.handle_figure(fig, size=(7,7), close=False)
 
     fig, ax = plt.subplots(2)
-    ax[0].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["inflow_velocity"], label="original")
-    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_velocity"], label="new")
+    ax[0].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["inflow_speed"], label="original")
+    ax[0].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_speed"], label="new")
 
-    ax[1].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["inflow_angle"], label="original")
-    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["inflow_angle"], label="new")
+    ax[1].plot(df_bem_results_R_scaled["r_centre"], df_bem_results_R_scaled["phi"], label="original")
+    ax[1].plot(df_bem_results_new["r_centre"], df_bem_results_new["phi"], label="new")
 
     helper.handle_axis(ax, x_label="radial position", y_label=["inflow velocity in m/s", "inflow angle in degree"],
                        legend=True, grid=True)

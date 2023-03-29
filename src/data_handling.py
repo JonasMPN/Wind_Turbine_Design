@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
+from scipy.integrate import simpson
 import numpy as np
 import pandas as pd
 import os, shutil
 from src.helper_functions import Helper
 from copy import copy
+import json
 helper = Helper()
 
 
@@ -242,3 +244,44 @@ def compare_optimal_actual(dir_save: str,
                        x_label="r/R (-)", y_label=["chord/R (-)", "angle (°)"], grid=True, legend=True, line_width=4,
                        font_size=20)
     helper.handle_figure(fig, save_to=dir_save+"/actual_optimum_comparison.png", size=(18.5, 14))
+
+
+def exists_already(df, **kwargs) -> bool:
+    if df.query(order_to_query(kwargs)).empty:
+        return False
+    else:
+        return True
+
+def slice_results(df, **kwargs):
+    for parameter, value in kwargs.items():
+        df = df[df[parameter]==value]
+    return df
+
+
+def order_to_query(order: dict, negate_order: bool=False) -> str:
+    compare_by = "==" if not negate_order else "!="
+    query = str()
+    for param, value in order.items():
+        if type(value) in [str, list]:
+            query += f"{param}{compare_by}'{value}' and "
+        else:
+            query += f"{param}{compare_by}{value} and "
+    return query[:-5]
+
+
+def calculate_root_moments(BEM_results_file: str, json_file: str, turbine_name: str) -> None:
+    df_BEM = pd.read_csv(BEM_results_file)
+    axial_loading = np.asarray([0]+df_BEM["f_n"]+[0])
+    azimuthal_loading = np.asarray([0]+df_BEM["f_t"]+[0])
+    radial_positions = np.asarray([df_BEM["root_radius"][0]]+df_BEM["r_centre"]+[df_BEM["rotor_radius"][0]])
+    if os.path.isfile(json_file):
+        with open(json_file) as f:
+            moments = json.load(f)
+            moments[turbine_name] = {"axial": simpson(axial_loading*radial_positions, radial_positions),
+                                     "azimuthal": simpson(azimuthal_loading*radial_positions, radial_positions)}
+    else:
+        moments = {turbine_name: {"axial": simpson(axial_loading*radial_positions, radial_positions),
+                                     "azimuthal": simpson(azimuthal_loading*radial_positions, radial_positions)}}
+    with open(json_file, "w") as f:
+        json.dump(moments, f)
+    return
