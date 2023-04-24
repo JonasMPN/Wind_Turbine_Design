@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from data_handling import *
 import pandas as pd
 import scipy.interpolate as interpolate
 from helper_functions import Helper
@@ -26,13 +26,15 @@ class BEM:
         self.implemented_tip_correction = ["none", "dtu", "tud"]
         self.implemented_root_correction = ["none", "tud"]
         self.blade_end_correction = 1
+        self.constants = None
 
     def set_constants(self,
                       rotor_radius: float,
                       root_radius: float,
                       n_blades: int,
                       air_density: float) -> None:
-        self._set(**{param: value for param, value in locals().items() if param != "self"})
+        self.constants = {param: value for param, value in locals().items() if param != "self"}
+        self._set(**self.constants)
         return None
 
     def solve_TUD(self,
@@ -40,57 +42,69 @@ class BEM:
                   wind_speed: float,
                   tip_speed_ratio: float,
                   pitch: float or np.ndarray,
-                  radial_offset: float=None,
-                  start_radius: float = None,
+                  start_radius: float=0,
                   max_convergence_error: float=1e-6,
                   max_iterations: int=500,
                   tip_loss_correction: bool=True,
                   root_loss_correction: bool=True) -> None:
         """
-        Function to run the BEM loop
+        Function to run the BEM loop. The radius from the blade file needs to start at zero at the beginning of the
+        blade itself. The start radius lives in that coordinate system too!
         Glauert_correction: either 'tud' (TU Delft) or 'dtu' (Denmark's TU). Same for blade_end_correction
         All angles must be in rad.
         :param wind_speed:
+        :param axis_offset: radial distance from blade root to rotational axis
         :param tip_speed_ratio:
         :param pitch: IN DEGREE
         :param resolution:
         :return:
         """
-        start_radius = start_radius if start_radius is not None else self.root_radius
+        skip = ["skip", "self", "max_convergence_error", "max_iterations", "df", "blade_file"]
+        df = pd.read_csv(blade_file)
+        # Set identifier for results
+        df = df[df["BlSpn"]>=start_radius]
+        resolution = df.shape[0]
+        use_as_identifier = {param: value for param, value in (self.constants|locals()).items() if param not in skip}
+        identifier = {param: np.ones(resolution)*value for param, value in use_as_identifier.items()}
+        try:
+            if exists_already(self.df_results, **use_as_identifier):
+                print(f"BEM already done for {use_as_identifier}, skipping solve().")
+                return None
+        except Exception as exc:
+            if self.df_results.empty:
+                pass
+            elif exc == pd.core.computation.ops.UndefinedVariableError:
+                print("You probably added a parameter that does not exist in 'BEM_results.dat'. Go talk to Jonas.")
         # Initialise the result containers
         results = {
-            "r_centre": list(),     # radius used for the calculations
-            "inflow_velocity": list(), # flow velocity that the airfoil sees
-            "inflow_angle": list(), # angle between the rotational direction and the incoming flow that the airfoil sees
-            "a": list(),            # Axial Induction factor
-            "a_prime": list(),      # Tangential induction factor
-            "f_n": list(),          # Forces normal to the rotor plane in N/m
-            "f_t": list(),          # Forces tangential in the rotor plane in N/m
-            "bec": list(),          # blade end correction (depending on 'tip' and 'root')
-            "C_T": list(),          # thrust coefficient
-            "alpha": list(),        # angle of attack
-            "alpha_max": list(),    # maximum angle of attack
-            "alpha_best": list(),   # angle of attack for maximum L/D
-            "circulation": list(),  # magnitude of the circulation using Kutta-Joukowski
-            "v0": list(),           # flow velocity normal to rotor plane
-            "tsr": list(),          # tip speed ratio
-            "pitch": list(),         # pitch in degree
+            "r_centre": list(),  # radius used for the calculations
+            "a": list(),  # Axial Induction factor
+            "a_prime": list(),  # Tangential induction factor
+            "C_t": list(),  # tangential aerodynamic coefficient
+            "C_n": list(),  # normal aerodynamic coefficient
+            "f_n": list(),  # Forces normal to the rotor plane in N/m
+            "f_t": list(),  # Forces tangential in the rotor plane in N/m
+            "C_T": list(),  # thrust coefficient
+            "alpha": list(),  # angle of attack
+            "end_correction": list(),  # blade end correction (depending on 'tip' and 'root'),
+            "alpha_max": list(),  # maximum angle of attack
+            "alpha_best": list(),  # angle of attack for maximum L/D
+            "c_l": list(),  # lift coefficient at radial position
+            "c_d": list(),  # drag coefficient at radial position
+            "phi": list(),  # inflow angle
+            "inflow_speed": list()  # inflow speed for airfoil
         }
-        # delete data with same wind speed, tip speed ratio and pitch angle.
-        try:
-            self.df_results = self.df_results.loc[~((self.df_results["tsr"]==tip_speed_ratio) &
-                                                    (self.df_results["v0"]==wind_speed) &
-                                                    (self.df_results["pitch"]==pitch))]
-        except KeyError:
-            pass
         pitch = np.deg2rad(pitch)
         # Calculate the rotational speed
         omega = tip_speed_ratio*wind_speed/self.rotor_radius
         # Loop along the span of the blade (blade sections)
-        df = pd.read_csv(blade_file)
+        df["BlSpn"] += self.root_radius
         print(f"Doing BEM for v0={wind_speed}, tsr={tip_speed_ratio}, pitch={pitch}")
+        skipped = 0
         for idx, row in df.iterrows():      # Take the left and right radius of every element
-            if row["BlSpn"] < start_radius:
+            if row["BlSpn"] == self.root_radius or row["BlSpn"] == self.rotor_radius:
+                skipped += 1
+                print(f"Blade end element at {row['BlSpn']-self.root_radius} was skipped.")
                 continue
             # insert airfoil polars into the interpolator
             airfoil_id = int(row["BlAFID"])-1 if row["BlAFID"]>10 else f"0{int(row['BlAFID'])-1}"
@@ -135,27 +149,31 @@ class BEM:
             # Now that we have the converged axial induction factor, we can get the rest of the values
             phi, inflow_speed = self._flow(a=a, a_prime=a_prime, wind_speed=wind_speed, rotational_speed=omega,
                                            radius=row["BlSpn"])
-            alpha, c_l, _, c_n, c_t = self._phi_to_aero_values(phi=phi, twist=np.deg2rad(row["BlTwist"]),
-                                                               pitch=pitch,  radius=row["BlSpn"],
-                                                               tip_seed_ratio=tip_speed_ratio, university="tud")
+            alpha, c_l, c_d, c_n, c_t = self._phi_to_aero_values(phi=phi, twist=np.deg2rad(row["BlTwist"]), pitch=pitch,
+                                                                 radius=row["BlSpn"], tip_seed_ratio=tip_speed_ratio,
+                                                                 university="tud")
+
             # Assemble the result output structure
-            results["r_centre"].append(row["BlSpn"])
-            results["inflow_velocity"].append(inflow_speed)
-            results["inflow_angle"].append(np.rad2deg(phi))
+            results["r_centre"].append(row["BlSpn"]-self.root_radius)
             results["a"].append(a)
             results["a_prime"].append(a_prime)
-            results["f_n"].append(self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_n))
-            results["f_t"].append(self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_t))
-            results["bec"].append(blade_end_correction)
+            results["C_n"].append(c_n)
+            results["C_t"].append(c_t)
+            results["f_n"].append(
+                self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_n))
+            results["f_t"].append(
+                self._aero_force(inflow_velocity=inflow_speed, chord=row["BlChord"], force_coefficient=c_t))
             results["C_T"].append(self._C_T(a))
             results["alpha"].append(alpha)
             results["alpha_max"].append(df_tmp["alpha"].loc[df_tmp["c_l"].idxmax()])
             results["alpha_best"].append(df_tmp["alpha"].loc[(df_tmp["c_l"]/df_tmp["c_d"]).idxmax()])
-            results["circulation"].append(1/2*inflow_speed*c_l*row["BlChord"])
-            results["v0"].append(wind_speed)
-            results["tsr"].append(tip_speed_ratio)
-            results["pitch"].append(pitch)
-        self.df_results = pd.concat([self.df_results, pd.DataFrame(results)])
+            results["end_correction"].append(blade_end_correction)
+            results["c_l"].append(c_l)
+            results["c_d"].append(c_d)
+            results["phi"].append(phi)
+            results["inflow_speed"].append(inflow_speed)
+        identifier = {param: values[:resolution-skipped] for param, values in identifier.items()}
+        self.df_results = pd.concat([self.df_results, pd.DataFrame(identifier|results)])
         self.df_results.to_csv(self.root+"/BEM_results.dat", index=False)
         return None
 
