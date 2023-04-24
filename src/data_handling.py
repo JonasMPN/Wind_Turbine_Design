@@ -98,7 +98,6 @@ def prepare_openFAST_to_FAST(dir_openFAST_data: str,
                              dir_FAST: str,
                              file_type: str="dat") -> None:
     """
-    THIS FUNCTION OVERWRITES THE DIRECTORY "dir_FAST"!!!
     This function copies the coordinates and polars directory while changing the filetype of the directories' files
     to "file_type".
     It also writes out the stall angles, c_n slope, and critical c_n and saves it to a file called

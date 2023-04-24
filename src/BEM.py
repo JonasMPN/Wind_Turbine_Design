@@ -40,6 +40,7 @@ class BEM:
                   wind_speed: float,
                   tip_speed_ratio: float,
                   pitch: float or np.ndarray,
+                  radial_offset: float=None,
                   start_radius: float = None,
                   max_convergence_error: float=1e-6,
                   max_iterations: int=500,
