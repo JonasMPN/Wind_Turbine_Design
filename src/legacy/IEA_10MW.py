@@ -1,21 +1,31 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-data_dir = "../data/NREL_5MW"
-blade_file = "NREL_5MW_blade_data.txt"
+FAST_to_pandas = False
+if FAST_to_pandas:
+    data_dir = "data/IEA_10MW/airfoils/FAST_format"
+    file_blank = "IEA-10.0-198-RWT_AeroDyn15_Polar_"
+    for i in range(30):
+        idx = f"0{i}" if i < 10 else f"{i}"
+        file = data_dir+"/"+file_blank+idx+".dat"
+        df = pd.read_csv(file, skiprows=54, names=["alpha", "c_l", "c_d", "c_m"], delim_whitespace=True)
+        df.to_csv("data/IEA_10MW/airfoils/pandas_format/"+file_blank+f"{i}"+".dat", index=None)
+
+
+data_dir = "../../data/IEA_10MW"
+blade_file = "blade_data.txt"
+file_blank = "IEA-10.0-198-RWT_AeroDyn15_Polar_"
 tsr = 7.55
 R = 85
 B = 3
 
-
 df_blade = pd.read_csv(data_dir+"/"+blade_file, index_col=None)
-df_blade["r/R"] = df_blade["RNodes"]/df_blade["RNodes"].max()
+df_blade["r/R"] = df_blade["BlSpn"]/df_blade["BlSpn"].max()
 positions, twist, chord, l2ds = list(), list(), list(), list()
 for i, row in df_blade.iterrows():
-    if i < 3: continue
-    airfoil_file = row["Airfoil"]
-    df_airfoil = pd.read_csv(data_dir+"/"+airfoil_file, index_col=None)
+    if i < 1: continue
+    df_airfoil = pd.read_csv(data_dir+"/airfoils/pandas_format/"+file_blank+f"{i}.dat", index_col=None)
     lift2drag = df_airfoil["c_l"]/df_airfoil["c_d"]
     c_l = df_airfoil["c_l"].iloc[np.argmax(lift2drag)]
     alpha = df_airfoil["alpha"].iloc[np.argmax(lift2drag)]
@@ -34,5 +44,3 @@ ax[1].plot(positions, twist)
 ax[2].plot(positions, l2ds)
 print(np.trapz(positions, l2ds))
 plt.show()
-
-
