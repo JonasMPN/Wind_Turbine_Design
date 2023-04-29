@@ -52,6 +52,8 @@ class BEM:
         blade itself. The start radius lives in that coordinate system too!
         Glauert_correction: either 'tud' (TU Delft) or 'dtu' (Denmark's TU). Same for blade_end_correction
         All angles must be in rad.
+        Note that the result r_centre is already in the rotor and NOT blade coordinate system. This means r_centre =
+        blade_r_centre + root_radius
         :param wind_speed:
         :param axis_offset: radial distance from blade root to rotational axis
         :param tip_speed_ratio:
@@ -102,9 +104,10 @@ class BEM:
         print(f"Doing BEM for v0={wind_speed}, tsr={tip_speed_ratio}, pitch={pitch}")
         skipped = 0
         for idx, row in df.iterrows():      # Take the left and right radius of every element
-            if row["BlSpn"] == self.root_radius or row["BlSpn"] == self.rotor_radius:
+            if row["BlSpn"] <= 1.01*self.root_radius or 0.99*self.rotor_radius <= row["BlSpn"]:
                 skipped += 1
-                print(f"Blade end element at {row['BlSpn']-self.root_radius} was skipped.")
+                print(f"Blade end element at {row['BlSpn']} was skipped because it too close to the "
+                      f"root or tip.")
                 continue
             # insert airfoil polars into the interpolator
             airfoil_id = int(row["BlAFID"])-1 if row["BlAFID"]>10 else f"0{int(row['BlAFID'])-1}"
@@ -154,7 +157,7 @@ class BEM:
                                                                  university="tud")
 
             # Assemble the result output structure
-            results["r_centre"].append(row["BlSpn"]-self.root_radius)
+            results["r_centre"].append(row["BlSpn"])
             results["a"].append(a)
             results["a_prime"].append(a_prime)
             results["C_n"].append(c_n)
