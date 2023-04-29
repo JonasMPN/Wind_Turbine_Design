@@ -1,13 +1,9 @@
 function FAST_object = blade(FAST_object, aero_data, structure_data, rotor_precone)
-    %% check whether an element is at r=0m
-    if aero_data.BlSpn(1) == 0
-        aero_data(1,:) = [];
-        structure_data(1,:) = [];
-    end
+    hub_radius = FAST_object.Nacelle.Housing.Diameter/2;
     n_positions = size(aero_data.BlSpn);
     
     %% change Radius
-    FAST_object.Blade.Radius = aero_data.BlSpn;
+    FAST_object.Blade.Radius = aero_data.BlSpn+hub_radius;
     
     %% change Chord
     FAST_object.Blade.Chord = aero_data.BlChord;
