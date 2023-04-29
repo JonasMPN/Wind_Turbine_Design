@@ -191,14 +191,17 @@ def incorporate_modifications(dir_FAST: str, file: str) -> None:
         raise ValueError("The radial positions of the R-scaled blade and the modifications must be the same, "
                          "but they are not.")
     # change blade properties
-    df_aero_modified["BlChord"] = df_modifications["BlChord"]
+    # df_aero_modified["BlChord"] = df_modifications["BlChord"]
     df_aero_modified["BlTwist"] = df_modifications["BlTwist"]
     df_elasto_modified["StrcTwst"] = df_modifications["BlTwist"]
 
     # scale blade properties from chord change
-    chord_fac = df_modifications["BlChord"]/df_aero_R_scaled["BlChord"]
-    for parameter, order in {"BMassDen": 2, "FlpStff": 4, "EdgStff": 4}.items():
-        df_elasto_modified[parameter] *= chord_fac**order
+    # chord_fac = df_modifications["BlChord"]/df_aero_R_scaled["BlChord"]
+    # for parameter, order in {"BMassDen": 2, "FlpStff": 4, "EdgStff": 4}.items():
+    #     df_elasto_modified[parameter] *= chord_fac**order
+
+    for parmeter in ["BMassDen", "FlpStff", "EdgStff"]:
+        df_elasto_modified[parmeter] *= df_modifications["t"]
 
     # save modified/scaled files
     df_aero_modified.to_csv(dir_FAST+"/blade_aero_dyn_modified.dat", index=False)
