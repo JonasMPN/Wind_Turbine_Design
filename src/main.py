@@ -17,13 +17,14 @@ do = {
     "openFAST_to_FAST": False,
     "scale_rotor": False,
     "modify_rotor": False,
+    "modify_thickness_factor": True,
     "optimum_NREL": False,
     "optimum_DTU": False,
     "optimum_IEA": False,
     "plot_optimum_file": False,
     "compare_optimal_actual": False,
     "BEM": False,
-    "plot_BEM_results": True,
+    "plot_BEM_results": False,
     "t_distribution": False
 }
 
@@ -43,6 +44,11 @@ if do["scale_rotor"]:
 
 if do["modify_rotor"]:
     data_handling.incorporate_modifications(dir_FAST="../data/FAST_integration", file="modifications_blade_J.dat")
+
+if do["modify_thickness_factor"]:
+    add_t = 0.00
+    # add_t = "../data/FAST_integration/additional_t.dat"
+    data_handling.add_thickness_factor(add_t)
 
 if do["optimum_NREL"]:
     NREL = BladeApproximation(root_dir="../data",
@@ -103,7 +109,7 @@ if do["BEM"]:
     bem.solve_TUD("../data/FAST_integration/blade_aero_dyn_modified.dat", wind_speed=8, tip_speed_ratio=10.58, pitch=0,
                   start_radius=4)
     data_handling.calculate_root_moments("../data/results/BEM_results.dat",
-                                         json_file="../data/results/root_moments.json", turbine_name="modified")
+                                         json_file="../data/results/shaft_moments.json", turbine_name="modified")
 
 if do["plot_BEM_results"]:
     root_radius = 2.4*90/99.155
