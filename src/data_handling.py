@@ -181,12 +181,15 @@ def scale_blade_by_R(dir_FAST: str, file_type: str, old_radius: float, new_radiu
     df_elasto_R_scaled.to_csv(dir_FAST+"/blade_elasto_dyn_R_scaled."+file_type, index=False)
     return
 
-def incorporate_modifications(dir_FAST: str, file: str) -> None:
+def incorporate_modifications(dir_FAST: str, file: str=None, df_modifications: pd.DataFrame=None) -> None:
+    if file == None and type(df_modifications) != pd.DataFrame:
+        raise ValueError("Either the file with the modifications has to be specified or a pandas' dataframe must be "
+                         "supplied")
     df_aero_R_scaled = pd.read_csv(dir_FAST+"/blade_aero_dyn_R_scaled.dat")
     df_elasto_R_scaled = pd.read_csv(dir_FAST+"/blade_elasto_dyn_R_scaled.dat")
     df_aero_modified = copy(df_aero_R_scaled)
     df_elasto_modified = copy(df_elasto_R_scaled)
-    df_modifications = pd.read_csv(dir_FAST+"/"+file)
+    df_modifications = pd.read_csv(dir_FAST+"/"+file) if df_modifications is None else df_modifications
     if not df_modifications["BlSpn"].equals(df_aero_R_scaled["BlSpn"]):
         raise ValueError("The radial positions of the R-scaled blade and the modifications must be the same, "
                          "but they are not.")
@@ -206,6 +209,14 @@ def incorporate_modifications(dir_FAST: str, file: str) -> None:
     # save modified/scaled files
     df_aero_modified.to_csv(dir_FAST+"/blade_aero_dyn_modified.dat", index=False)
     df_elasto_modified.to_csv(dir_FAST+"/blade_elasto_dyn_modified.dat", index=False)
+
+def add_thickness_factor(add_t = str or float,
+                         dir_FAST: str="../data/FAST_integration",
+                         file_base_modifications: str="modifications_blade_J.dat") -> None:
+    add_t = pd.read_csv("../data/FAST_integration/additional_t.dat")["t"] if type(add_t) == str else add_t
+    df_modifications = pd.read_csv(dir_FAST+"/"+file_base_modifications)
+    df_modifications["t"] += add_t
+    incorporate_modifications(dir_FAST, df_modifications=df_modifications)
 
 
 def compare_optimal_actual(dir_save: str,
