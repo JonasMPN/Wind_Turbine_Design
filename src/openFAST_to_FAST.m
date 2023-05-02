@@ -4,7 +4,7 @@ addpath('openFAST_to_FAST_functions\');
 %% user input
 data_root = "../data/FAST_integration";
 openFAST_data_file_type = "dat";
-base_file = append(data_root, "/NREL_5MW.mat");
+base_file = append(data_root, "/IEA_7MW.mat");
 new_file = append(data_root, "/IEA_7MW.mat");
 new_radius = 90;
 old_radius = 99;
