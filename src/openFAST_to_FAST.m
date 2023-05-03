@@ -4,17 +4,15 @@ addpath('openFAST_to_FAST_functions\');
 %% user input
 data_root = "../data/FAST_integration";
 openFAST_data_file_type = "dat";
-base_file = append(data_root, "/IEA_7MW.mat");
-new_file = append(data_root, "/IEA_7MW.mat");
+base_file = append(data_root, "/7MWJonas.mat");
+new_file = append(data_root, "/7MWJonas.mat");
 new_radius = 90;
 old_radius = 99;
 new_rated_power = 7e6;
-max_tip_speed = 90;
-cut_in_wind_speed = 4;
+max_tip_speed = 87;
 initial_C_P = 0.49;
 density = 1.225;
 tip_speed_ratio = 10.58;
-control_transition_margin = 0.05;
 scale_fac = new_radius/old_radius;
 
 % Nacelle
@@ -23,7 +21,8 @@ hub_radius = 2.4*90/99.155; % metres
 
 m_yam_bearing = 93457*scale_fac^3;
 m_nacelle_turret_and_nose = 109450*scale_fac^3;
-m_generator = 151651;
+%m_generator = 151651+7000;
+m_generator = 158.526;
 m_converter = 5250;
 m_shaft = 78894*scale_fac*(3910381.2837784197/5125004.865491613)^(2/3);
 
@@ -35,12 +34,17 @@ hub_mass = 81707*scale_fac^3;
 gen_efficiency = 0.9732; 
 gearbox_ratio = 1;
 gen_inertia = 553812.578;
+converter_efficiency = 0.98;
 
 % Blade
 rotor_precone = 4; % degrees
 
 % Controls
-torque_max = 8000000;
+cut_in_wind_speed = 4;
+control_transition_margin = 0.05;
+old_demanded_torque = 4.3094e4;
+old_limit_torque = 4.7403e4;
+min_omega = 6;
 
 % Tower
 eff_density = 8500;
@@ -59,20 +63,21 @@ dir_coordinates = append(data_root, "/coordinates");
 
 
 %% creating data tables
-
-
 % drivetrain
-drivetrain_data = table(gen_efficiency, gearbox_ratio, gen_inertia);
+elec_efficiency = gen_efficiency*converter_efficiency;
+drivetrain_data = table(elec_efficiency, gearbox_ratio, gen_inertia);
 
 % controls
 opt_mode_gain = pi*density*new_radius^5*initial_C_P/(2*tip_speed_ratio^3);
 omega_C = max_tip_speed/new_radius*60/(2*pi);
 omega_B2 = omega_C*(1-control_transition_margin);
-omega_A = tip_speed_ratio*cut_in_wind_speed/new_radius*60/(2*pi);
+omega_A = min_omega;
 omega_B = omega_A*(1+control_transition_margin);
-torque_demanded = new_rated_power/(omega_C*2*pi/60*gen_efficiency);
+torque_demanded = new_rated_power/(omega_C*2*pi/60*elec_efficiency);
+torque_max = old_limit_torque/old_demanded_torque*torque_demanded;
+torque_min = 2.5e4;
 control_data = table(torque_demanded, omega_A, omega_B, omega_B2, omega_C, opt_mode_gain, ...
-    torque_max);
+    torque_max, torque_min);
 
 
 %% change hub and shaft parameters. This needs to happen before the blade changes!
