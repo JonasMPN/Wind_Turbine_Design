@@ -8,6 +8,13 @@ base_file = append(data_root, "/IEA_7MW.mat");
 new_file = append(data_root, "/IEA_7MW.mat");
 new_radius = 90;
 old_radius = 99;
+new_rated_power = 7e6;
+max_tip_speed = 90;
+cut_in_wind_speed = 4;
+initial_C_P = 0.49;
+density = 1.225;
+tip_speed_ratio = 10.58;
+control_transition_margin = 0.05;
 scale_fac = new_radius/old_radius;
 
 % Nacelle
@@ -25,20 +32,15 @@ hub_mass = 81707*scale_fac^3;
 
 
 % Drivetrain
-gen_efficiency = 0.9236922238; 
+gen_efficiency = 0.9732; 
 gearbox_ratio = 1;
+gen_inertia = 553812.578;
 
 % Blade
 rotor_precone = 4; % degrees
 
 % Controls
 torque_max = 8000000;
-torque_rated = 7578283;
-optimal_mode_gain = 4.7012e+6;
-omega_A = 3.3677;
-omega_B = 3.5;
-omega_B2 = 9.3;
-omega_C = 9.5493;
 
 % Tower
 eff_density = 8500;
@@ -55,6 +57,24 @@ scalar_info = readtable(file_additional_information);
 dir_polars = append(data_root, "/polars");
 dir_coordinates = append(data_root, "/coordinates");
 
+
+%% creating data tables
+
+
+% drivetrain
+drivetrain_data = table(gen_efficiency, gearbox_ratio, gen_inertia);
+
+% controls
+opt_mode_gain = pi*density*new_radius^5*initial_C_P/(2*tip_speed_ratio^3);
+omega_C = max_tip_speed/new_radius*60/(2*pi);
+omega_B2 = omega_C*(1-control_transition_margin);
+omega_A = tip_speed_ratio*cut_in_wind_speed/new_radius*60/(2*pi);
+omega_B = omega_A*(1+control_transition_margin);
+torque_demanded = new_rated_power/(omega_C*2*pi/60*gen_efficiency);
+control_data = table(torque_demanded, omega_A, omega_B, omega_B2, omega_C, opt_mode_gain, ...
+    torque_max);
+
+
 %% change hub and shaft parameters. This needs to happen before the blade changes!
 disp("Changing hub and shaft")
 FAST_object = nacelle(FAST_object, shaft_tilt, hub_radius, hub_mass, nacelle_mass);
@@ -69,11 +89,11 @@ FAST_object = airfoil(FAST_object, scalar_info, dir_coordinates, dir_polars);
 
 %% change drivetrain
 disp("Changing drivetrain")
-FAST_object = drivetrain(FAST_object, gen_efficiency, gearbox_ratio);
+FAST_object = drivetrain(FAST_object, drivetrain_data);
 
 %% change controls
 disp("Changing controls")
-FAST_object = controls(FAST_object, torque_max, torque_rated, optimal_mode_gain, omega_A, omega_B, omega_B2, omega_C);
+FAST_object = controls(FAST_object, control_data);
 
 %% change tower 
 disp("Changing tower")
