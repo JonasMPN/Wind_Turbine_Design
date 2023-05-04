@@ -9,7 +9,7 @@ new_file = append(data_root, "/7MWJonas.mat");
 new_radius = 90;
 ref_radius = 99;
 new_rated_power = 7e6;
-max_tip_speed = 87;
+max_tip_speed = 90;
 initial_C_P = 0.49;
 density = 1.225;
 tip_speed_ratio = 10.58;
@@ -78,15 +78,16 @@ control_data = table(torque_demanded, omega_A, omega_B, omega_B2, omega_C, opt_m
 
 % nacelle
 m_yam_bearing = m_ref_yam_bearing*scale_fac^3;
-m_nacelle_turret_and_nose = m_ref_nacelle_turret_and_nose^scale_fac^3;
+m_nacelle_turret_and_nose = m_ref_nacelle_turret_and_nose*scale_fac^3;
 m_shaft = m_ref_shaft*scale_fac*(torque_demanded/ref_demanded_torque)^(2/3);
 nacelle_mass = m_yam_bearing+m_nacelle_turret_and_nose+m_generator+m_converter+m_shaft;
 hub_mass = m_ref_hub*scale_fac^3;
+nacelle_data = table(shaft_tilt, hub_radius, hub_mass, nacelle_mass);
 
 
 %% change hub and shaft parameters. This needs to happen before the blade changes!
 disp("Changing hub and shaft")
-FAST_object = nacelle(FAST_object, shaft_tilt, hub_radius, hub_mass, nacelle_mass);
+FAST_object = nacelle(FAST_object, nacelle_data);
 
 %% change blade properties (this needs to be run before the airfoil changes!)
 disp("Changing blade properties")
