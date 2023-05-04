@@ -7,28 +7,25 @@ openFAST_data_file_type = "dat";
 base_file = append(data_root, "/7MWJonas.mat");
 new_file = append(data_root, "/7MWJonas.mat");
 new_radius = 90;
-old_radius = 99;
+ref_radius = 99;
 new_rated_power = 7e6;
 max_tip_speed = 87;
 initial_C_P = 0.49;
 density = 1.225;
 tip_speed_ratio = 10.58;
-scale_fac = new_radius/old_radius;
+scale_fac = new_radius/ref_radius;
 
 % Nacelle
 shaft_tilt = 6; % degrees
 hub_radius = 2.4*90/99.155; % metres
 
-m_yam_bearing = 93457*scale_fac^3;
-m_nacelle_turret_and_nose = 109450*scale_fac^3;
-%m_generator = 151651+7000;
-m_generator = 158.526;
+m_ref_yam_bearing = 93457;
+m_ref_nacelle_turret_and_nose = 109450;
+m_ref_shaft = 78894;
+m_ref_hub = 81707;
+
+m_generator = 151651;
 m_converter = 5250;
-m_shaft = 78894*scale_fac*(3910381.2837784197/5125004.865491613)^(2/3);
-
-nacelle_mass = m_yam_bearing+m_nacelle_turret_and_nose+m_generator+m_converter+m_shaft;
-hub_mass = 81707*scale_fac^3;
-
 
 % Drivetrain
 gen_efficiency = 0.9732; 
@@ -42,8 +39,8 @@ rotor_precone = 4; % degrees
 % Controls
 cut_in_wind_speed = 4;
 control_transition_margin = 0.05;
-old_demanded_torque = 4.3094e4;
-old_limit_torque = 4.7403e4;
+limit_to_demanded_torque = 4.7403/4.3094;
+ref_demanded_torque = 11.7e6;
 min_omega = 6;
 
 % Tower
@@ -74,10 +71,17 @@ omega_B2 = omega_C*(1-control_transition_margin);
 omega_A = min_omega;
 omega_B = omega_A*(1+control_transition_margin);
 torque_demanded = new_rated_power/(omega_C*2*pi/60*elec_efficiency);
-torque_max = old_limit_torque/old_demanded_torque*torque_demanded;
+torque_max = limit_to_demanded_torque*torque_demanded;
 torque_min = 2.5e4;
 control_data = table(torque_demanded, omega_A, omega_B, omega_B2, omega_C, opt_mode_gain, ...
     torque_max, torque_min);
+
+% nacelle
+m_yam_bearing = m_ref_yam_bearing*scale_fac^3;
+m_nacelle_turret_and_nose = m_ref_nacelle_turret_and_nose^scale_fac^3;
+m_shaft = m_ref_shaft*scale_fac*(torque_demanded/ref_demanded_torque)^(2/3);
+nacelle_mass = m_yam_bearing+m_nacelle_turret_and_nose+m_generator+m_converter+m_shaft;
+hub_mass = m_ref_hub*scale_fac^3;
 
 
 %% change hub and shaft parameters. This needs to happen before the blade changes!
