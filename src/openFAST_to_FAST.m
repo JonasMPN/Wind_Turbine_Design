@@ -24,14 +24,13 @@ m_ref_nacelle_turret_and_nose = 109450;
 m_ref_shaft = 78894;
 m_ref_hub = 81707;
 
-m_generator = 151651;
+m_generator = 164918.8144;
 m_converter = 5250;
 
 % Drivetrain
-gen_efficiency = 0.9732; 
+gen_efficiency = 0.978; 
 gearbox_ratio = 1;
-gen_inertia = 553812.578;
-converter_efficiency = 0.98;
+gen_inertia = 686056.1061;
 
 % Blade
 rotor_precone = 4; % degrees
@@ -47,6 +46,13 @@ min_omega = 6;
 eff_density = 8500;
 hub_height = 108;
 
+% Losses
+cable_efficiency = 0.9991;
+converter_efficiency = 0.98;
+
+% Certification
+IEA_wind_class = 1;
+IEA_turbulence_class = 1; % A=1, B=2, C=3
 
 %% the following lines assume a certain directory structure
 FAST_object = load(base_file);
@@ -61,7 +67,7 @@ dir_coordinates = append(data_root, "/coordinates");
 
 %% creating data tables
 % drivetrain
-elec_efficiency = gen_efficiency*converter_efficiency;
+elec_efficiency = gen_efficiency*converter_efficiency*converter_efficiency;
 drivetrain_data = table(elec_efficiency, gearbox_ratio, gen_inertia);
 
 % controls
@@ -84,6 +90,8 @@ nacelle_mass = m_yam_bearing+m_nacelle_turret_and_nose+m_generator+m_converter+m
 hub_mass = m_ref_hub*scale_fac^3;
 nacelle_data = table(shaft_tilt, hub_radius, hub_mass, nacelle_mass);
 
+% certification
+certification_data = table(new_radius, IEA_wind_class, IEA_turbulence_class);
 
 %% change hub and shaft parameters. This needs to happen before the blade changes!
 disp("Changing hub and shaft")
@@ -108,6 +116,10 @@ FAST_object = controls(FAST_object, control_data);
 %% change tower 
 disp("Changing tower")
 FAST_object = tower(FAST_object, tower_data, hub_height, eff_density);
+
+%% change certification
+disp("Changing certification")
+FAST_object = certification(FAST_object, certification_data);
 
 %% save changes
 save(new_file, "-struct", "FAST_object")
