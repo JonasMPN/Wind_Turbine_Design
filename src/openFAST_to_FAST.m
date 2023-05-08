@@ -24,14 +24,14 @@ m_ref_nacelle_turret_and_nose = 109450;
 m_ref_shaft = 78894;
 m_ref_hub = 81707;
 
-m_generator = 151651;
+%m_generator = 151651;
+m_generator = 165745;
 m_converter = 5250;
 
 % Drivetrain
 gen_efficiency = 0.9732; 
 gearbox_ratio = 1;
 gen_inertia = 553812.578;
-converter_efficiency = 0.98;
 
 % Blade
 rotor_precone = 4; % degrees
@@ -47,6 +47,10 @@ min_omega = 6;
 eff_density = 8500;
 hub_height = 108;
 
+% losses
+converter_efficiency = 0.98;
+cable_effifiency = 0.9991;
+
 
 %% the following lines assume a certain directory structure
 FAST_object = load(base_file);
@@ -61,7 +65,7 @@ dir_coordinates = append(data_root, "/coordinates");
 
 %% creating data tables
 % drivetrain
-elec_efficiency = gen_efficiency*converter_efficiency;
+elec_efficiency = gen_efficiency*converter_efficiency*cable_effifiency;
 drivetrain_data = table(elec_efficiency, gearbox_ratio, gen_inertia);
 
 % controls
