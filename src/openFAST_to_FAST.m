@@ -4,8 +4,8 @@ addpath('openFAST_to_FAST_functions\');
 %% user input
 data_root = "../data/FAST_integration";
 openFAST_data_file_type = "dat";
-base_file = append(data_root, "/7MWJonas.mat");
-new_file = append(data_root, "/7MWJonas.mat");
+base_file = append(data_root, "/controlled7MW4.mat");
+new_file = append(data_root, "/controlled7MW4_v2.mat");
 new_radius = 90;
 ref_radius = 99;
 new_rated_power = 7e6;
@@ -52,7 +52,7 @@ converter_efficiency = 0.98;
 
 % Certification
 IEA_wind_class = 1;
-IEA_turbulence_class = 1; % A=1, B=2, C=3
+IEA_turbulence_class = 2; % A=1, B=2, C=3
 
 %% the following lines assume a certain directory structure
 FAST_object = load(base_file);
