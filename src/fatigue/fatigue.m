@@ -4,10 +4,10 @@ close all
 dir_root = "../../data/fatigue";
 pdf_wind_speed = load(append(dir_root, "/task_2/pdf_wind_speed_histogram.mat")).histogram_wind_hub;
 dir_load_cases = append(dir_root, "/FASTtool_load_cases");
-file_base_simulation = append(dir_load_cases, "/simulation_seed");
+file_base_simulation = append(dir_load_cases, "/simulation");
 
-seeds = [41 42];
-wind_speed_range = 4:25;
+seeds = [1 2];
+wind_speed_range = 1:27;
 blades = [1 2 3];
 load_types = ["RootMEdg" "RootMFlp"]; 
 t_loads = 600; % seconds
@@ -45,8 +45,8 @@ if isfile(concatenated_file)
 else
     % build data structure
     disp("Concatenating and saving results.")
-    file_example = append(file_base_simulation, "_", num2str(seeds(1)), "_U=", ...
-        num2str(wind_speed_range(1)), ".00.mat");
+    file_example = append(file_base_simulation, "_U=", num2str(wind_speed_range(1)), ...
+        ".00_seed=", num2str(seeds(1)), ".mat");
     example_results = load(file_example);
     load_matrix = zeros(size(wind_speed_range, 2), ...
         size(seeds, 2)*size(example_results.Time, 1));
@@ -68,8 +68,8 @@ else
             wind_speed = wind_speed_range(i);
             for n = 1:size(seeds)+1
                 seed = seeds(n);
-                simulation_file = append(file_base_simulation, "_", num2str(seed), "_U=", ...
-                    num2str(wind_speed), ".00.mat");
+                simulation_file = append(file_base_simulation, "_U=", num2str(wind_speed), ...
+                    ".00_seed=", num2str(seed), ".mat");
                 sim_results = load(simulation_file);
                 load_time_series = [load_time_series sim_results.(load_type)'*1e3];
             end
@@ -83,7 +83,7 @@ else
 end
 
 %% Calculation of damage and damage equivalent loads
-disp("Calculating the absolute damage, the relative damage until failure, and" + ...
+disp("Calculating the absolute damage, the relative damage until failure, and " + ...
     "equivalent moment ranges.")
 combined_loads_file = append(dir_root, "/combined_loads_", loads_str, "_blades_", ...
     mat2str(blades), "_seeds_", mat2str(seeds), "_U_range_", ...

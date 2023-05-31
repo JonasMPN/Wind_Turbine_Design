@@ -27,7 +27,7 @@ run('P2_main.m');
 %% Plot hub height (110 m)
 
 figure();
-wind_x_hub = linspace(-0.5,wind_mean_hub_max-0.5,wind_mean_hub_max+1);
+wind_x_hub = linspace(0.5,wind_mean_hub_max+0.5,wind_mean_hub_max+1);
 pd_x_hub = linspace(0,wind_mean_hub_max,100);
 
 pd_wbl_wind_hub=fitdist(wind_hub','Weibull'); 
