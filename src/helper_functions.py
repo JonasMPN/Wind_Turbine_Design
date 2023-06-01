@@ -4,6 +4,7 @@ import shutil
 import matplotlib.pyplot
 import numpy as np
 
+
 class Helper():
     def __init__(self):
         pass
@@ -129,22 +130,27 @@ class Helper():
             if x_lim is not None: ax.set_xlim(x_lim)
             if y_lim is not None: ax.set_ylim(y_lim)
 
+            ax.set_xscale(x_scale)
+            ax.set_yscale(y_scale)
+
             if font_size:
                 ax.title.set_fontsize(font_size)
+
                 ax.xaxis.label.set_fontsize(font_size)
                 ax.yaxis.label.set_fontsize(font_size)
+
+                ax.xaxis.offsetText.set_fontsize(font_size)
+                ax.yaxis.offsetText.set_fontsize(font_size)
+
                 if ax.name == "3d":
                     ax.zaxis.label.set_fontsize(font_size)
                 ax.tick_params(axis='both', labelsize=font_size)
 
-            ax.grid(grid[i])
+            ax.grid(grid[i], which="both")
             ax.set_xlabel(x_label[i], labelpad=label_pad)
             ax.set_ylabel(y_label[i], labelpad=label_pad)
             if z_label is not None:
                 ax.set_zlabel(z_label, labelpad=label_pad)
-
-            ax.set_xscale(x_scale)
-            ax.set_yscale(y_scale)
 
             if legend or line_width:
                 if (type(legend_together) == int or line_width) and i==0:
