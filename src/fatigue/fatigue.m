@@ -7,13 +7,14 @@ dir_load_cases = append(dir_root, "/FASTtool_load_cases");
 file_base_simulation = append(dir_load_cases, "/simulation");
 
 seeds = [1 2];
-wind_speed_range = 1:27;
+wind_speed_range = 1:30;
+V_ref = 50;
 blades = [1 2 3];
 load_types = ["RootMEdg" "RootMFlp"]; 
-t_loads = 600; % seconds
+skip_first_time = 60; % seconds
 life_time = 20; % years
 m = 9;
-load_bin_width = 0.01;
+load_bin_width = 10e3;
 equivalent_load_cycles = [5e6 1e7 20*365*24*3600];
 material_max_stress = 600e6; % in Pa=Nm^-2
 fos_load = 1;
@@ -21,7 +22,9 @@ fos_material = 1.7;
 fos_severity = 1.3;
 root_chord = 4.5; % m
 second_MoA_root = 118585511936.00403/21.79e9; % stiffness/E in m^4
-
+threshold_cycles = [0.995 0.995 0.995 0.995 0.995 0.983 0.983 0.983 0.983 0.988 0.988 ... 
+    0.988 0.988 0.99 0.99 0.99 0.99 0.99 0.995 0.995 0.995];
+threshold_cycles = ones(size(wind_speed_range));
 %% pre structure
 loads = strings(1, size(load_types, 2)*size(blades, 2));
 n_blades = size(blades, 2);
@@ -48,16 +51,18 @@ else
     file_example = append(file_base_simulation, "_U=", num2str(wind_speed_range(1)), ...
         ".00_seed=", num2str(seeds(1)), ".mat");
     example_results = load(file_example);
-    load_matrix = zeros(size(wind_speed_range, 2), ...
-        size(seeds, 2)*size(example_results.Time, 1));
+    ids_to_use = example_results.Time > skip_first_time;
+    n_elements = sum(ids_to_use);
+    load_matrix = zeros(size(wind_speed_range, 2), size(seeds, 2)*n_elements);
     t_extrapolate = zeros(size(wind_speed_range, 2), 1);
     base_struct = struct("load_matrix", load_matrix, "t_extrapolate", t_extrapolate);
     concatenated_data = struct;
     for i = 1:size(loads, 2)
         concatenated_data.(loads(i)) = base_struct;
     end
-    bin_centres = (pdf_wind_speed.BinEdges(1:end-1)+pdf_wind_speed.BinEdges(2:end))/2;
-    wind_speed_prob = dictionary(bin_centres, pdf_wind_speed.Values);
+    wind_speed_prob = exp(-pi*(wind_speed_range-0.5)/(2*0.2*V_ref))-exp(-pi*(wind_speed_range+0.5)/(2*0.2*V_ref));
+    plot(wind_speed_range, wind_speed_prob)
+    wind_speed_prob = dictionary(wind_speed_range, wind_speed_prob);
     
     % concatenate results
     for l = 1:size(loads, 2)
@@ -70,8 +75,9 @@ else
                 seed = seeds(n);
                 simulation_file = append(file_base_simulation, "_U=", num2str(wind_speed), ...
                     ".00_seed=", num2str(seed), ".mat");
-                sim_results = load(simulation_file);
-                load_time_series = [load_time_series sim_results.(load_type)'*1e3];
+                tmp_loads = load(simulation_file).(load_type);
+                tmp_loads = tmp_loads(ids_to_use)*1e3;
+                load_time_series = [load_time_series tmp_loads'];
             end
             concatenated_data.(load_type).load_matrix(i, :) = load_time_series;
             load_time_for_lifetime = life_time*365*24*3600*wind_speed_prob(wind_speed);
@@ -97,23 +103,25 @@ else
     failure = struct("n", 1, "load_range", load_range);
     safety_factor = fos_severity*fos_material*fos_load;
     combined_loads = struct;
-    t_combined_loads = t_loads*max(size(seeds));
+    t_combined_loads = 540*max(size(seeds));
     for i = 1:size(loads, 2)
         disp(append("Working on load ", loads(i)))
         load_type = loads(i);
         plot_data = concatenated_data.(load_type);
         
-        [absolute_damage, damage, equivalent_load_ranges] = combine_loads(plot_data.load_matrix, ...
+        [partial_damage, absolute_damage, equivalent_load_ranges] = combine_loads(plot_data.load_matrix, ...
             t_combined_loads, plot_data.t_extrapolate, load_bin_width, equivalent_load_cycles, ...
-            m, failure, safety_factor);
-        combined_loads.(loads(i)) = struct("absolute_damage", absolute_damage, "damage", ...
-            damage, "equivalent_load_ranges", equivalent_load_ranges);
+            m, failure, safety_factor, threshold_cycles, 1);
+        combined_loads.(loads(i)) = struct("partial_damage", partial_damage, ...
+            "absolute_damage", absolute_damage, "equivalent_load_ranges", ...
+            equivalent_load_ranges, "total_damage", sum(partial_damage));
     end
     disp("Saving combined loads")
     save(combined_loads_file, "-struct", "combined_loads")
 end
 
 %% Exporting and/or plotting data. A basis for plotting here in MATLAB is provided.
+disp("Exporting data into csvs.")
 % axes = cell(size(load_types, 2)+1, 1);
 plot_data_types = cat(2, "equivalent_load_range", load_types);
 plot_data = cell(size(plot_data_types,  2), 1);
@@ -145,7 +153,7 @@ for i_load_type = 1:size(loads, 2)
     load_type = loads(i_load_type);
     load_data = combined_loads.(load_type);
     plot_data{1}.(load_type) = load_data.equivalent_load_ranges.values;
-    plot_data{i_ax(i_load_type)}.("blade"+num2str(blade_no)) = load_data.absolute_damage;
+    plot_data{i_ax(i_load_type)}.("blade"+num2str(blade_no)) = load_data.partial_damage;
 
     % loglog(axes{1}, N_eq, load_data.equivalent_load_ranges.values, "-x", "DisplayName", ...
     %     load_type);

@@ -31,15 +31,21 @@ function [RANGE, MEAN] = rainflow(A)
 % 
 % Version
 %   Last updated: 2012/2/25
-
 clear RANGE MEAN;
-
 valley = find(diff(sign(diff(A))) > 0) + 1;
 peak = find(diff(sign(diff(A))) < 0) + 1;
+% valley = find(islocalmin(A, "MinSeparation", 0.5, "SamplePoints", t))
+% peak = find(islocalmax(A, "MinSeparation", 0.5, "SamplePoints", t))
+% t = 1:size(A, 2);
+
+% plot(t, A, t(valley),  A(valley), "r*", t(peak), A(peak), "g*") ;
 Apv(1) = A(1);
 Apv(2 : length(A(union(valley,peak))) + 1) = A(union(valley,peak));
 Apv(end + 1) = A(end);
 Apv = Apv';
+
+% figure
+% plot(Apv)
 
 if length(Apv) < 4
     RANGE = 0;
@@ -67,6 +73,8 @@ else
 
     mm = 0;
     nn = 0;
+    % figure
+    % plot(Apv)
     while ~isempty(Apv)
         
         nn = nn + 1;

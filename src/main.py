@@ -16,7 +16,7 @@ do = {
     "FAST_to_pandas": False,
     "openFAST_to_FAST": False,
     "scale_rotor": False,
-    "modify_rotor": False,
+    "modify_rotor": True,
     "modify_thickness_factor": True,
     "optimum_NREL": False,
     "optimum_DTU": False,
@@ -35,7 +35,7 @@ if do["FAST_to_pandas"]:
 if do["openFAST_to_FAST"]:
     data_handling.prepare_openFAST_to_FAST(dir_openFAST_data="../data/openFAST",
                                            aero_dyn_blade_file="IEA-10.0-198-RWT_AeroDyn15_blade.dat",
-                                           elasto_dyn_blade_file= "IEA-10.0-198-RWT_ElastoDyn_blade.dat",
+                                           elasto_dyn_blade_file="IEA-10.0-198-RWT_ElastoDyn_blade.dat",
                                            dir_FAST="../data/FAST_integration")
 
 if do["scale_rotor"]:
@@ -46,7 +46,7 @@ if do["modify_rotor"]:
     data_handling.incorporate_modifications(dir_FAST="../data/FAST_integration", file="modifications_blade_J.dat")
 
 if do["modify_thickness_factor"]:
-    add_t = 0.00
+    add_t = 0.08
     # add_t = "../data/FAST_integration/additional_t.dat"
     data_handling.add_thickness_factor(add_t)
 

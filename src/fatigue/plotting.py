@@ -14,9 +14,10 @@ rename_title = {
 }
 y_labels = {
 		"equivalent_load_range": r"$\Delta M_{eq}$ (Nm)",
-		"RootMEdg": r"$M_{edg}^m$N  (Nm)$^m$",
-		"RootMFlp": r"$M_{flp}^m$N  (Nm)$^m$"
+		"RootMEdg": r"partial damage $d$",
+		"RootMFlp": r"partial damage $d$"
 }
+
 x_labels = {
 		"equivalent_load_range": r"$N_{eq}$",
 		"RootMEdg": r"U $(\frac{m}{s})$",
@@ -27,7 +28,7 @@ scale = {
 		"RootMEdg": "linear",
 		"RootMFlp": "linear"
 }
-plt.rcParams.update({'font.size': 22})
+plt.rcParams.update({'font.size': 30})
 for file in os.listdir(dir_data):
 	plot_type = file[:file.find(".")]
 	df = pd.read_csv(dir_data+"/"+file)
@@ -36,7 +37,7 @@ for file in os.listdir(dir_data):
 	for col in columns[1:]:
 		ax.plot(df[columns[0]], df[col], label=col)
 	helper.handle_axis(ax, legend=True, grid=True, x_label=x_labels[plot_type], y_label=y_labels[plot_type],
-					   line_width=3, font_size=22, title=rename_title[plot_type], x_scale=scale[plot_type],
+					   line_width=3, font_size=30, title=rename_title[plot_type], x_scale=scale[plot_type],
 					   y_scale=scale[plot_type])
 	if plot_type == "equivalent_load_range":
 		handles, labels = ax.get_legend_handles_labels()
